@@ -1,40 +1,20 @@
-//import { useRouter } from 'next/router'
+import axios from 'axios';
 import React, { useState } from 'react';
-//import { useSession, signIn } from 'next-auth/react'
 import { FcGoogle } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
-//import img from 'next/img'
 
 export default function SignIn() {
-  //const { data: session, status } = useSession();
-  //const { push, asPath } = useRouter();
-  const [login, setLogin] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
-    // e.preventDefault();
-    // const result = await signIn('credentials', {
-    //   redirect: false,
-    //   login,
-    //   password,
-    //   callbackUrl: asPath,
-    // });
-    // if (result.error) {
-    //   setLoading(false);
-    //   setError(result.error);
-    // } else {
-    //   setLoading(true);
-    // }
+    e.preventDefault();
+    setLoading(false);
   };
 
-  const handleOAuthSignIn = () => {
-    //() => signIn(provider);
-    // if (session) {
-    //   push('/');
-  };
   return (
     <div className="flex flex-col justify-center items-center h-screen w-screen">
       <div className="flex flex-col justify-center items-center bg-white h-[500px] w-[350px] rounded-xl relative  border-1-inherit shadow-lg">
@@ -47,12 +27,12 @@ export default function SignIn() {
         >
           <div className="flex flex-col">
             <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-              Username
+              User Name
             </label>
             <input
               type="text"
               required
-              onChange={(e) => setLogin(e.target.value)}
+              onChange={(e) => setUsername(e.target.value)}
               className="w-[300px] px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>
@@ -104,10 +84,7 @@ export default function SignIn() {
           </div>
         </div>
         <div className="flex flex-col justify-center items-center">
-          <button
-            onClick={handleOAuthSignIn}
-            className="flex justify-center items-center w-[300px] bg-gray-200 m-[5px] py-[7px] rounded-md border-1-inherit shadow-md active:shadow-inner"
-          >
+          <button className="flex justify-center items-center w-[300px] bg-gray-200 m-[5px] py-[7px] rounded-md border-1-inherit shadow-md active:shadow-inner">
             <span>
               <FcGoogle />
             </span>

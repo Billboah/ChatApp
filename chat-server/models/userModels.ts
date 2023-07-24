@@ -19,7 +19,7 @@ const UserSchema = new mongoose.Schema<UserModel>({
                 validator: EmailValidator.validate,
                 message: (props) => `${props.value} is not valid email address!`,
               },},
-              password: {type: String,   minLength: 8, select: false},
+              password: {type: String,   minLength: 8},
              // passwordConfirmation: {type: String, required: true, minLength: 8,},
               pic: {type: String,  default: "https://www.transparentpng.com/thumb/user/black-username-png-icon-free--4jlZLb.png" }
 }, {

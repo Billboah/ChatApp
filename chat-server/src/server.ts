@@ -21,7 +21,7 @@ app.get('/', (req, res) => {
               res.send('Hello, world!');
             });
 
-app.post('/api/user', asyncHandler(async (req, res)=>{
+app.post('/api/user/signup', asyncHandler(async (req, res)=>{
   const {name, username, email, password, pic } = req.body
 
   if(!name || !email || !password || !username ){
@@ -55,7 +55,7 @@ app.post('/api/user', asyncHandler(async (req, res)=>{
 }))
 
 app.post('/api/user/login', asyncHandler(async (req, res)=>{
-  const {username, email, password,  } = req.body
+  const {username,  password,  } = req.body
 
   if( !password || !username ){
                 res.status(400);
@@ -63,6 +63,8 @@ app.post('/api/user/login', asyncHandler(async (req, res)=>{
   }
 
   const user = await User.findOne({ username })
+
+  console.log(user.password)
 
 
   if (user && (await user.comparePassword(password))){
