@@ -3,12 +3,13 @@ import  cors from "cors";
 import  bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import connectDB from '../config/db'
-import userRoutes from '../routes/userRoutes'
 import asyncHandler from "express-async-handler"
 import User from '../models/userModels'
 import generateToken from '../config/generateToken'
 
+
 dotenv.config();
+
 
 connectDB()
 const app = express();
@@ -20,6 +21,7 @@ app.use(bodyParser.json())
 app.get('/', (req, res) => {
               res.send('Hello, world!');
             });
+
 
 app.post('/api/user/signup', asyncHandler(async (req, res)=>{
   const {name, username, email, password, pic } = req.body
@@ -54,7 +56,8 @@ app.post('/api/user/signup', asyncHandler(async (req, res)=>{
   }
 }))
 
-app.post('/api/user/login', asyncHandler(async (req, res)=>{
+
+app.post('/api/user/signin', asyncHandler(async (req, res)=>{
   const {username,  password,  } = req.body
 
   if( !password || !username ){

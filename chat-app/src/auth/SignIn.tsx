@@ -12,7 +12,19 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
     e.preventDefault();
-    setLoading(false);
+    axios
+      .post('http://localhost:5000/api/user/signin', {
+        username,
+        password,
+      })
+      .then(function (response) {
+        console.log(response);
+        setLoading(false);
+      })
+      .catch(function (error) {
+        console.log(error);
+        setLoading(false);
+      });
   };
 
   return (
@@ -76,20 +88,6 @@ export default function SignIn() {
           <Link to="signup" className="text-blue-500">
             Create an account
           </Link>
-        </div>
-        <div className="text-sm border-1 relative w-[300px] m-5">
-          <div className="border border-gray-200 "></div>
-          <div className="absolute top-[-10px] left-[45%] bg-white w-fit px-2 z-10">
-            OR
-          </div>
-        </div>
-        <div className="flex flex-col justify-center items-center">
-          <button className="flex justify-center items-center w-[300px] bg-gray-200 m-[5px] py-[7px] rounded-md border-1-inherit shadow-md active:shadow-inner">
-            <span>
-              <FcGoogle />
-            </span>
-            <span className="ml-[10px]">Sign in with google</span>
-          </button>
         </div>
       </div>
     </div>

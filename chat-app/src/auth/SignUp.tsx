@@ -1,6 +1,7 @@
 // import Image from 'next/image';
 //import Link from 'next/link';
 //import { useRouter } from 'next/router';
+import axios from 'axios';
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
@@ -10,49 +11,48 @@ function SignUp() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [profileImage, setProfileImage] = useState('');
+  const [name, setFullname] = useState('');
+  const [pic, setPic] = useState('');
   const [passwordMessage, setPasswordMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    try {
-      setLoading(true);
-      // const reader = new FileReader()
-      // reader.readAsDataURL(profileImage)
-      // reader.onloadend = async () => {
-      //   const imageData = reader.result
-
-      const payload = {
-        image: profileImage,
+    setLoading(true);
+    axios
+      .post('http://localhost:5000/api/user/signup', {
         username,
+        name,
         email,
-        firstName,
-        lastName,
         password,
-      };
-
-      const response = await fetch('../api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-      if (data.message === 'File uploaded successfully!') {
-        setLoading(true);
-      } else {
-        setMessage(data.message);
+        pic,
+      })
+      .then(function (response) {
+        console.log(response.data);
         setLoading(false);
-        // }
-      }
-    } catch (error) {
-      setLoading(false);
-      setMessage('Internal server error!');
+      })
+      .catch(function (error) {
+        console.log(error);
+        setLoading(false);
+      });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileInput = e.target;
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      return;
     }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataURL = reader.result as string; // Explicitly cast to string
+      // Use the dataURL or send it to your server for storage
+      setPic(dataURL);
+      console.log(dataURL);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,18 +115,19 @@ function SignUp() {
             <input
               type="text"
               required
-              onChange={(e) => setFirstName(e.target.value)}
+              value={name}
+              onChange={(e) => setFullname(e.target.value)}
               className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>
-
           <div className="h-15 flex flex-col">
             <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-              Username
+              User Name
             </label>
             <input
               type="text"
               required
+              value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
@@ -137,6 +138,7 @@ function SignUp() {
             </label>
             <input
               type="email"
+              value={email}
               required
               onChange={(e) => setEmail(e.target.value)}
               className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
@@ -187,8 +189,7 @@ function SignUp() {
               className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               type="file"
               accept="image/*"
-              onChange={(e) => setProfileImage(e.target.value)}
-              required
+              onChange={handleFileChange}
             />
           </div>
           <div className="w-full flex justify-start text-sm mt-[5px]">
