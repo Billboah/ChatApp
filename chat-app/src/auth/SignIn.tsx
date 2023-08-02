@@ -1,6 +1,5 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { FcGoogle } from 'react-icons/fc';
 import { Link } from 'react-router-dom';
 
 export default function SignIn() {
@@ -39,7 +38,7 @@ export default function SignIn() {
         >
           <div className="flex flex-col">
             <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-              User Name
+              User Name or Email
             </label>
             <input
               type="text"

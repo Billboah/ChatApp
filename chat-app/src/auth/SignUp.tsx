@@ -6,13 +6,15 @@ import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
+type PicStateType = string | undefined;
+
 function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [name, setFullname] = useState('');
-  const [pic, setPic] = useState('');
+  const [pic, setPic] = useState<PicStateType>(undefined);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -50,7 +52,6 @@ function SignUp() {
       const dataURL = reader.result as string; // Explicitly cast to string
       // Use the dataURL or send it to your server for storage
       setPic(dataURL);
-      console.log(dataURL);
     };
     reader.readAsDataURL(file);
   };
@@ -182,9 +183,7 @@ function SignUp() {
             </p>
           </div>
           <div className="h-15 flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-              Profile image
-            </label>
+            <label className="">Profile image</label>
             <input
               className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               type="file"
