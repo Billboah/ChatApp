@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 export default function SignIn() {
-  const [username, setUsername] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ export default function SignIn() {
     e.preventDefault();
     axios
       .post('http://localhost:5000/api/user/signin', {
-        username,
+        name,
         password,
       })
       .then(function (response) {
@@ -43,7 +43,7 @@ export default function SignIn() {
             <input
               type="text"
               required
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               className="w-[300px] px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>

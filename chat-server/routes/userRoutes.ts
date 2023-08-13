@@ -3,6 +3,7 @@ import { Router, Request, Response } from 'express';
 import User from '../models/userModels'
 import asyncHandler from "express-async-handler"
 import generateToken from '../config/generateToken'
+import {authenticate} from '../middleware/authMiddleware'
 
 const router: Router = Router();
 
@@ -43,14 +44,14 @@ router.post('/signup', asyncHandler(async (req: Request, res: Response)=>{
             
 //Signin router
             router.post('/signin', asyncHandler(async (req: Request, res: Response)=>{
-              const {username,  password, email  } = req.body
+              const {name,  password  } = req.body
             
-              if( !password || !(username || email) ){
+              if( !password || !name ){
                             res.status(400);
                             throw new Error('Please enter all the feilds')
               }
             
-              const user = await User.findOne({ $or: [ { username }, { email } ] } )
+              const user = await User.findOne({$or: [{username: name}, {email: name},]})
             
             
               if (user && (await user.comparePassword(password))){
@@ -68,6 +69,24 @@ router.post('/signup', asyncHandler(async (req: Request, res: Response)=>{
               }
             
             }))
+
+//get user/users
+router.get('/', authenticate, async(req: Request, res: Response)=>{
+   const keyword = req.query.search
+
+   try {
+     const users = await User.find(keyword ? {
+           $or: [
+             { username: { $regex: keyword, $options: 'i' } },
+             { email: { $regex: keyword, $options: 'i' } }
+           ]
+     } : {  }).find({_id: {$ne: req.user._id}});
+ 
+     res.json(users);
+   } catch (error) {
+     res.status(500).json({ error: 'An error occurred while fetching users.' });
+   }
+   })            
 
 export default router;
 
