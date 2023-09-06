@@ -1,12 +1,16 @@
 import axios from 'axios';
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { setUser } from '../state/reducers/auth';
 
 export default function SignIn() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
@@ -17,7 +21,8 @@ export default function SignIn() {
         password,
       })
       .then(function (response) {
-        console.log(response);
+        dispatch(setUser(response.data));
+        navigate('/');
         setLoading(false);
       })
       .catch(function (error) {
@@ -84,7 +89,7 @@ export default function SignIn() {
         )}
         <div className="text-sm flex rounded-md">
           <div className="mr-[5px]"> Don&apos;t have account?</div>
-          <Link to="signup" className="text-blue-500">
+          <Link to="/signup" className="text-blue-500">
             Create an account
           </Link>
         </div>

@@ -1,0 +1,188 @@
+import React, { useState } from 'react';
+import {
+  FaArrowLeft,
+  FaCamera,
+  FaCheck,
+  FaPen,
+  FaSignOutAlt,
+} from 'react-icons/fa';
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutUser, setUser } from '../../state/reducers/auth';
+import { setProfile } from '../../state/reducers/screen';
+import axios, { AxiosRequestConfig } from 'axios';
+import { setChatChange } from '../../state/reducers/chat';
+import { RootState } from '../../state/reducers';
+
+const Profile = () => {
+  const { user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch();
+  const [isHovered, setIsHovered] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [nameEdit, setNameEdit] = useState(false);
+  const [changeName, SetChangeName] = useState(user?.username);
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    dispatch(setProfile(null));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileInput = e.target;
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const dataURL = reader.result as string;
+
+      setLoading(true);
+      const config: AxiosRequestConfig<any> = {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      };
+      axios
+        .put(
+          'http://localhost:5000/api/user/updatepic',
+          { pic: dataURL },
+          config,
+        )
+        .then((response) => {
+          dispatch(setChatChange(true));
+          dispatch(setUser(response.data));
+          setNameEdit(false);
+          setLoading(false);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleChangeName = () => {
+    if (user?.username === changeName || changeName === '') {
+      setNameEdit(false);
+      return;
+    } else {
+      setLoading(true);
+      const config: AxiosRequestConfig<any> = {
+        headers: {
+          Authorization: `Bearer ${user?.token}`,
+        },
+      };
+      axios
+        .put(
+          'http://localhost:5000/api/user/rename',
+          { username: changeName },
+          config,
+        )
+        .then((response) => {
+          dispatch(setChatChange(true));
+          dispatch(setUser(response.data));
+          setNameEdit(false);
+        })
+        .catch((error) => {
+          console.error('Error:', error);
+        });
+    }
+  };
+
+  return (
+    <div>
+      <nav className="flex items-end bg-gray-200 h-[70px] w-full px-[20px] py-[10px]">
+        <button className="" onClick={() => dispatch(setProfile(false))}>
+          <FaArrowLeft size={20} />
+        </button>
+        <h2 className="text-xl font-bold ml-[20px]">Profile</h2>
+      </nav>
+      <div className="flex flex-col  h-full py-[50px] px-[30px]">
+        <div className="flex flex-col justify-center w-full mb-[30px] relative">
+          <div className="w-full h-full flex justify-center items-center">
+            <div
+              className="inline clock h-fit w-fit "
+              onMouseEnter={() => setIsHovered(true)}
+              onMouseLeave={() => setIsHovered(false)}
+              title="Change Icon"
+            >
+              <div className=" h-[180px] w-[180px] rounded-full border border-gray-500  bg-gray-400 relative cursor-pointer">
+                {isHovered && (
+                  <label htmlFor="file-input">
+                    <div className="flex flex-col  justify-center items-center h-full w-full rounded-full border border-gray-500  bg-black absolute  top-0 right-0 bg-opacity-30 cursor-pointer">
+                      <FaCamera color="white" />
+                      <p className="text-small text-white">
+                        Change Profile Icon
+                      </p>
+                    </div>
+                  </label>
+                )}
+                <input
+                  id="file-input"
+                  className="hidden h-full w-full"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+
+                <div className="flex justify-center items-center h-full w-full rounded-full border border-gray-500  bg-gray-400 cursor-pointer">
+                  <img
+                    src={user?.pic}
+                    alt="group icon"
+                    className="rounded-full h-[180px] w-[180px]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            className={`${
+              nameEdit && 'border-b-2 border-gray-500 px-2'
+            } flex justify-center items-end w-fit `}
+          >
+            {nameEdit ? (
+              <input
+                type="text"
+                value={changeName}
+                onChange={(e) => SetChangeName(e.target.value)}
+                placeholder="Type here..."
+                className="bg-inherit outline-none text-lg font-bold mt-[10px] w-full"
+              />
+            ) : (
+              <p className="text-lg font-bold mt-[10px] mr-4">
+                {user?.username}
+              </p>
+            )}
+            {nameEdit ? (
+              <button className="mb-1" onClick={handleChangeName} title="save">
+                <FaCheck color="gray" />
+              </button>
+            ) : (
+              <button
+                className="mb-2"
+                onClick={() => setNameEdit(true)}
+                title="Edit name"
+              >
+                <FaPen color="gray" size={15} />
+              </button>
+            )}
+          </div>
+          <p className="font-bold mb-[30px]">{user?.email}</p>
+        </div>
+        <div className="w-full">
+          <button
+            onClick={handleLogout}
+            className="flex items-center justify-start "
+            title="Sign out"
+          >
+            <FaSignOutAlt size={20} color="gray" />
+            <p className="text-gray-500 ml-[5px] font-bold">Sign Out</p>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Profile;

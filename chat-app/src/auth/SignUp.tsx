@@ -4,13 +4,16 @@
 import axios from 'axios';
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { setUser } from '../state/reducers/auth';
+import { useDispatch } from 'react-redux';
 
 type PicStateType = string | undefined;
 
 function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
   const [message, setMessage] = useState('');
   const [name, setFullname] = useState('');
@@ -18,6 +21,8 @@ function SignUp() {
   const [passwordMessage, setPasswordMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -31,7 +36,8 @@ function SignUp() {
         pic,
       })
       .then(function (response) {
-        console.log(response.data);
+        dispatch(setUser(response.data));
+        navigate('/');
         setLoading(false);
       })
       .catch(function (error) {
@@ -182,9 +188,38 @@ function SignUp() {
               {passwordMessage}
             </p>
           </div>
+          <div className="flex flex-col">
+            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+              confirmPassword
+            </label>
+            <div>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                required
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+              />
+              <button
+                type="button"
+                onClick={handleShowPassword}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  marginLeft: '-21px',
+                }}
+              >
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </div>
+          </div>
           <div className="h-15 flex flex-col">
-            <label className="">Profile image</label>
+            <label htmlFor="file-input" className="">
+              Profile image
+            </label>
             <input
+              id="file-input"
               className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               type="file"
               accept="image/*"
@@ -216,7 +251,7 @@ function SignUp() {
         <div className="text-sm mt-[5px]">
           <span className="mr-[5px]">Already have an account?</span>
           <span>
-            <Link to="/" className="text-blue-500">
+            <Link to="/signin" className="text-blue-500">
               Sign in instead.
             </Link>
           </span>

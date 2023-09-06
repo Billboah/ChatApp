@@ -1,5 +1,10 @@
 import mongoose from 'mongoose'
 
+interface IMessage extends mongoose.Document {
+              sender: mongoose.Types.ObjectId;
+              content: string;
+              chat: mongoose.Types.ObjectId;
+}
 
 const messageModel = new mongoose.Schema({
               sender: {type: mongoose.Schema.Types.ObjectId, ref: "User"},
@@ -9,6 +14,6 @@ const messageModel = new mongoose.Schema({
               timestamps: true
 })
 
-const Message = mongoose.model("Message", messageModel )
+const Message = mongoose.model<IMessage>("Message", messageModel )
 
-module.exports = Message
+export {Message, IMessage}

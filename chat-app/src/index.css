@@ -1,17 +1,52 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
+@import "animate.css";
+
+*{
+  box-sizing: border-box;
+
+}
 
 body {
   margin: 0;
+  padding: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow-y: hidden;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Styles for Webkit-based browsers like Chrome and Safari */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
 }
+ body::-webkit-scrollbar {
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+  background-color: #a5a5a5;
+  border-radius: 3px;
+}
+
+/* Styles for Firefox */
+.custom-scrollbar, body {
+  scrollbar-width: thin;
+  scrollbar-color: #a5a5a5 transparent;
+}
+
+/* Styles for Microsoft Edge (Chromium-based) */
+@supports (-ms-overflow-style: none) {
+  .custom-scrollbar, body {
+    scrollbar-width: thin;
+    scrollbar-color: #a5a5a5 transparent;
+  }
+}
+
+
+
+
+

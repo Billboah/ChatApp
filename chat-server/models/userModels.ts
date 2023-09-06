@@ -2,16 +2,17 @@ import * as mongoose from 'mongoose'
 import * as bcrypt from 'bcryptjs'
 import * as EmailValidator from "email-validator";
 
-interface UserModel extends Document {
+interface IUser extends Document {
   username: string;
   name: string;
   email: string;
   pic: string;
+  _id: string;
   password?: string;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-const UserSchema = new mongoose.Schema<UserModel>({
+const UserSchema = new mongoose.Schema({
               username: {type: String, required: true, unique: true},
               name: {type: String, required: true},
               email: {type: String, required: true, unique: true,  lowercase: true, 
@@ -19,9 +20,9 @@ const UserSchema = new mongoose.Schema<UserModel>({
                 validator: EmailValidator.validate,
                 message: (props) => `${props.value} is not valid email address!`,
               },},
-              password: {type: String,   minLength: 8},
-             // passwordConfirmation: {type: String, required: true, minLength: 8,},
-              pic: {type: String,  default: "https://www.transparentpng.com/thumb/user/black-username-png-icon-free--4jlZLb.png" }
+              password: {type: String,   minLength: 8, required: true},
+              confirmPassword: {type: String, required: true, minLength: 8,},
+              pic: {type: String,  default: "https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png" }
 }, {
               timestamps: true
 })
@@ -31,11 +32,15 @@ UserSchema.pre('save', async function(next) {
   var user = this;
 
   try {
-if (!user.isModified('password')) return next();
+    if (this.isModified('password')) {
+      if (this.password !== this.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
 
 const salt = await bcrypt.genSalt(10);
    user.password = await bcrypt.hash(user.password, salt);
-
+   user.confirmPassword = undefined;
+    }
      next();
 
     } catch (error) {
@@ -53,8 +58,8 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string): 
        }
 };
 
-const User = mongoose.model('User', UserSchema)
+const User = mongoose.model<IUser>('User', UserSchema)
 
 
-export default User
+export {User, IUser}
 
