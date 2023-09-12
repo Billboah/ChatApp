@@ -79,8 +79,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
                   }
                 }
               } catch (error) {
-                console.error(error);
-                return res.status(400).send(error.message);
+                res.status(error.status || 500).json({ error: error.message });
               }
 });
 
@@ -101,8 +100,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
              
                 res.status(200).json(populatedResults);
               } catch (error) {
-                console.error(error);
-                res.status(400).send(error.message);
+                res.status(error.status || 500).json({ error: error.message });
               }
 });
             
@@ -110,13 +108,15 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
 router.post('/group', authenticate, async (req: Request, res: Response) => {
               try {
                 if (!req.body.users || !req.body.name) {
-                  return res.status(400).json({ message: 'Please fill all fields' });
+                  res.status(400);
+                  throw new Error( 'Please fill all fields' );
                 }
             
                 const users: IUser[] = JSON.parse(req.body.users);
             
                 if (users.length < 2) {
-                  return res.status(400).send('More than 2 users are required to form a group chat');
+                  res.status(400);
+                  throw new Error('More than 2 users are required to form a group chat');
                 }
             
                 users.push(req.user); 
@@ -137,8 +137,7 @@ router.post('/group', authenticate, async (req: Request, res: Response) => {
             
                 res.status(200).json(fullGroupChat);
               } catch (error) {
-                console.error(error);
-                res.status(400).send(error.message);
+                res.status(error.status || 500).json({ error: error.message });
               }
  });
           
@@ -160,13 +159,12 @@ router.put('/rename', authenticate, async (req: Request, res: Response) => {
                   .populate('groupAdmin', '-password');
             
                 if (!updatedChat) {
-                  return res.status(404).send('Chat Not Found');
+                  return res.status(400).send('Chat Not Found');
                 }
             
                 res.json(updatedChat);
               } catch (error) {
-                console.error(error);
-                res.status(400).send(error.message);
+                res.status(error.status || 500).json({ error: error.message });
               }
 });
 
@@ -188,13 +186,12 @@ router.put('/changeicon', authenticate, async (req: Request, res: Response) => {
       .populate('groupAdmin', '-password');
 
     if (!updatedChat) {
-      return res.status(404).send('Chat Not Found');
+      return res.status(400).send('Chat Not Found');
     }
 
     res.json(updatedChat);
   } catch (error) {
-    console.error(error);
-    res.status(400).send(error.message);
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
@@ -207,7 +204,8 @@ router.put('/groupremove', authenticate, async (req: Request, res: Response) => 
                 const chat: any = await Chat.findOne({_id: chatId} )
 
                 if (chat.groupAdmin != req.user.id){
-                res.status(400).json({ message: 'You are not authorized to perform this function' });
+                  res.status(400);
+                  throw new Error( 'You are not authorized to perform this function' );
                }else{
                 const removedChat = await Chat.findByIdAndUpdate(
                   chatId,
@@ -220,14 +218,13 @@ router.put('/groupremove', authenticate, async (req: Request, res: Response) => 
                   .populate('groupAdmin', '-password');
             
                 if (!removedChat) {
-                  return res.status(404).send('Chat Not Found');
+                  return res.status(400).send('Chat Not Found');
                 }
             
                 res.json(removedChat);
               }
               } catch (error) {
-                console.error(error);
-                res.status(400).send(error.message);
+                res.status(error.status || 500).json({ error: error.message });
               }
 });
         
@@ -241,7 +238,7 @@ router.put('/groupadd', authenticate, async (req: Request, res: Response) => {
                const chat: any = await Chat.findOne({_id: chatId} )
 
                 if (chat.groupAdmin != req.user.id){
-                res.status(400).json({ message: 'You are not authorized to perform this function' });
+                  throw new Error( 'You are not authorized to perform this function' );
                 }else{
 
                 const addedChat = await Chat.findByIdAndUpdate(
@@ -261,8 +258,7 @@ router.put('/groupadd', authenticate, async (req: Request, res: Response) => {
                 res.json(addedChat);
               }
               } catch (error) {
-                console.error(error);
-                res.status(400).send(error.message);
+                res.status(error.status || 500).json({ error: error.message });
               }
             
 });

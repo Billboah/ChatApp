@@ -1,12 +1,11 @@
-// import Image from 'next/image';
-//import Link from 'next/link';
-//import { useRouter } from 'next/router';
 import axios from 'axios';
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { setUser } from '../state/reducers/auth';
 import { useDispatch } from 'react-redux';
+import { FadeLoading } from '../config/ChatLoading';
+import { BACKEND_API } from '../config/chatLogics';
 
 type PicStateType = string | undefined;
 
@@ -15,11 +14,11 @@ function SignUp() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [message, setMessage] = useState('');
+  const [signUpError, setSignUpError] = useState('');
   const [name, setFullname] = useState('');
   const [pic, setPic] = useState<PicStateType>(undefined);
-  const [passwordMessage, setPasswordMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -28,11 +27,12 @@ function SignUp() {
     e.preventDefault();
     setLoading(true);
     axios
-      .post('http://localhost:5000/api/user/signup', {
+      .post(`${BACKEND_API}/api/user/signup`, {
         username,
         name,
         email,
         password,
+        confirmPassword,
         pic,
       })
       .then(function (response) {
@@ -41,8 +41,20 @@ function SignUp() {
         setLoading(false);
       })
       .catch(function (error) {
-        console.log(error);
         setLoading(false);
+        if (error.response) {
+          if (error.response.status === 400) {
+            setSignUpError(error.response.data.error);
+          } else {
+            setSignUpError(error.response.data.error);
+          }
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
       });
   };
 
@@ -62,106 +74,92 @@ function SignUp() {
     reader.readAsDataURL(file);
   };
 
-  const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const passwordValue = event.target.value;
-
-    let passwordStrength = 0;
-
-    if (passwordValue.match(/[a-z]/)) {
-      passwordStrength += 1;
-    }
-
-    if (passwordValue.match(/[A-Z]/)) {
-      passwordStrength += 1;
-    }
-
-    if (passwordValue.match(/[0-9]/)) {
-      passwordStrength += 1;
-    }
-
-    if (passwordValue.match(/[!@#$%^&*()_+|~=-]/)) {
-      passwordStrength += 1;
-    }
-
-    if (passwordValue.length >= 8) {
-      passwordStrength += 1;
-    }
-
-    if (passwordStrength === 0) {
-      setPasswordMessage('');
-    } else if (passwordStrength === 1) {
-      setPasswordMessage('Password is weak');
-    } else if (passwordStrength === 2) {
-      setPasswordMessage('Password is moderate');
-    } else if (passwordStrength === 3) {
-      setPasswordMessage('Password is strong');
-    } else if (passwordStrength === 4) {
-      setPasswordMessage('Password is very strong');
-    }
-
-    setPassword(passwordValue);
-  };
-
   const handleShowPassword = () => {
     setShowPassword(!showPassword);
   };
-
+  const handleShowConfirmPassword = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
   return (
     <div className="flex flex-col justify-center items-center h-screen w-screen ">
-      <div className="flex flex-col justify-center items-center bg-white h-[650px] w-[350px] rounded-xl relative  border-1-inherit shadow-lg">
+      <div className="h-full w-full min-w-[200px] max-h-[650px] max-w-[350px] px-5 flex flex-col justify-center items-center bg-white  rounded-xl relative  border-1-inherit shadow-lg">
         <h1 className="font-bold mb-[20px] text-xl text-blue-600">Chat App</h1>
         <h2 className="font-bold mb-[20px] text-xl">Create account</h2>
         <form
           onSubmit={handleSubmit}
           className="flex flex-col justify-center items-center mb-[10px]"
         >
-          <div className="h-15 flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+          <div className="w-full h-15 flex flex-col">
+            <label
+              className="after:content-['*'] after:ml-0.5 after:text-red-500"
+              htmlFor="up-name"
+            >
               Full Name
             </label>
             <input
+              id="up-name"
               type="text"
               required
               value={name}
-              onChange={(e) => setFullname(e.target.value)}
-              className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+              onChange={(e) => {
+                setFullname(e.target.value), setSignUpError('');
+              }}
+              className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>
-          <div className="h-15 flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+          <div className="w-full h-15 flex flex-col">
+            <label
+              className="after:content-['*'] after:ml-0.5 after:text-red-500"
+              htmlFor="up-userName"
+            >
               User Name
             </label>
             <input
+              id="up-userName"
               type="text"
               required
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+              onChange={(e) => {
+                setUsername(e.target.value), setSignUpError('');
+              }}
+              className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>
-          <div className="flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+          <div className="w-full h-15 flex flex-col">
+            <label
+              className="after:content-['*'] after:ml-0.5 after:text-red-500"
+              htmlFor="up-email"
+            >
               Email
             </label>
             <input
+              id="up-email"
               type="email"
               value={email}
               required
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+              onChange={(e) => {
+                setEmail(e.target.value), setSignUpError('');
+              }}
+              className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>
-          <div className="flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+          <div className="w-full h-15 flex flex-col">
+            <label
+              htmlFor="up-password"
+              className="after:content-['*'] after:ml-0.5 after:text-red-500"
+            >
               Password
             </label>
             <div>
               <input
+                id="up-password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 required
-                onChange={handlePasswordChange}
-                className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+                onChange={(e) => {
+                  setPassword(e.target.value), setSignUpError('');
+                }}
+                className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               />
               <button
                 type="button"
@@ -176,33 +174,38 @@ function SignUp() {
                 {showPassword ? <FaEye /> : <FaEyeSlash />}
               </button>
             </div>
-            <p
-              className={`w-full text-sm flex justify-center  ${
-                passwordMessage === 'Password is weak' ||
-                passwordMessage === 'Password is moderate' ||
-                passwordMessage === 'Password is very moderate'
-                  ? 'text-red-500'
-                  : 'text-black'
-              }`}
-            >
-              {passwordMessage}
-            </p>
           </div>
-          <div className="flex flex-col">
+          <div className="w-full">
+            {signUpError ? (
+              <div className="text-sm mb-2 text-red-500  before:content-['*'] before:mr-0.5 before:text-red-500">
+                {signUpError}
+              </div>
+            ) : (
+              <div className="text-sm mb-2">
+                <p>Password must have at least 8 character. </p>
+                <p>
+                  Mix letters, symbols, and numbers to create a strong password.
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="w-full h-15 flex flex-col">
             <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
-              confirmPassword
+              Confirm Password
             </label>
             <div>
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showConfirmPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 required
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value), setSignUpError('');
+                }}
+                className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               />
               <button
                 type="button"
-                onClick={handleShowPassword}
+                onClick={handleShowConfirmPassword}
                 style={{
                   background: 'transparent',
                   border: 'none',
@@ -210,17 +213,17 @@ function SignUp() {
                   marginLeft: '-21px',
                 }}
               >
-                {showPassword ? <FaEye /> : <FaEyeSlash />}
+                {showConfirmPassword ? <FaEye /> : <FaEyeSlash />}
               </button>
             </div>
           </div>
-          <div className="h-15 flex flex-col">
+          <div className="w-full h-15 flex flex-col">
             <label htmlFor="file-input" className="">
               Profile image
             </label>
             <input
               id="file-input"
-              className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+              className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               type="file"
               accept="image/*"
               onChange={handleFileChange}
@@ -238,16 +241,21 @@ function SignUp() {
           <button
             disabled={loading}
             type="submit"
-            className="w-[300px] p-[5px] mt-[20px] bg-gray-200 rounded-md border-1-inherit shadow-md active:shadow-inner "
+            className="w-full p-[5px] mt-[20px] bg-gray-200 rounded-md border-1-inherit shadow-md active:shadow-inner "
           >
-            {loading ? 'Loading...' : 'Create account'}
+            {loading ? (
+              <div className="flex h-full justify-center items-center">
+                <div className="h-[2px] w-[2px] mr-3 mt-2">
+                  <FadeLoading height={5} width={3} margin={-12} />
+                </div>
+                <div>Loading...</div>
+              </div>
+            ) : (
+              <span>Create account</span>
+            )}
           </button>
         </form>
-        {message && (
-          <div className="text-sm text-red-500  before:content-['*'] before:mr-0.5 before:text-red-500">
-            {message}
-          </div>
-        )}
+
         <div className="text-sm mt-[5px]">
           <span className="mr-[5px]">Already have an account?</span>
           <span>

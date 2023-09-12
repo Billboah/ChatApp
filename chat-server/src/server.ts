@@ -45,8 +45,8 @@ io.on('connection', (socket) => {
   let userId 
 
   socket.on("setup", (userData) => {
-    userId = userData.id
-    socket.join(userData.id)
+    userId = userData?.id
+    socket.join(userData?.id)
     socket.emit("connected");
   });
 
@@ -63,11 +63,10 @@ io.on('connection', (socket) => {
     if (!chat.users) return console.log('chat.users not defined')
 
     chat.users.forEach((user)=>{
-      if (user === newMessageReceived.sender._id) {
+      if (user === newMessageReceived?.sender._id) {
          return
         }else{
       socket.in(user).emit('message received', newMessageReceived)}
-      
     })
   });
 

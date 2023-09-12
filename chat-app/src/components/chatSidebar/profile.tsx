@@ -12,20 +12,26 @@ import { setProfile } from '../../state/reducers/screen';
 import axios, { AxiosRequestConfig } from 'axios';
 import { setChatChange } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
+import { FadeLoading } from '../../config/ChatLoading';
+import { BACKEND_API } from '../../config/chatLogics';
 
 const Profile = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  const [error, setError] = useState('');
   const [isHovered, setIsHovered] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [picLoading, setPicLoading] = useState(false);
+  const [nameLoading, setNameLoading] = useState(false);
   const [nameEdit, setNameEdit] = useState(false);
   const [changeName, SetChangeName] = useState(user?.username);
 
+  //logout
   const handleLogout = () => {
     dispatch(logoutUser());
     dispatch(setProfile(null));
   };
 
+  //change profile pic
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
@@ -37,55 +43,76 @@ const Profile = () => {
     reader.onloadend = () => {
       const dataURL = reader.result as string;
 
-      setLoading(true);
+      setPicLoading(true);
       const config: AxiosRequestConfig<any> = {
         headers: {
           Authorization: `Bearer ${user?.token}`,
         },
       };
+
       axios
-        .put(
-          'http://localhost:5000/api/user/updatepic',
-          { pic: dataURL },
-          config,
-        )
+        .put(`${BACKEND_API}/api/user/updatepic`, { pic: dataURL }, config)
         .then((response) => {
           dispatch(setChatChange(true));
           dispatch(setUser(response.data));
           setNameEdit(false);
-          setLoading(false);
+          setPicLoading(false);
         })
         .catch((error) => {
-          console.error('Error:', error);
+          setPicLoading(false);
+          if (error.response) {
+            if (error.response.status === 400) {
+              setError(error.response.data.error);
+            } else {
+              console.error('Server error:', error.response.data.error);
+            }
+          } else if (error.request) {
+            alert(
+              'Cannot reach the server. Please check your internet connection.',
+            );
+          } else {
+            console.error('Error:', error.message);
+          }
         });
     };
     reader.readAsDataURL(file);
   };
 
+  //change name
   const handleChangeName = () => {
     if (user?.username === changeName || changeName === '') {
       setNameEdit(false);
       return;
     } else {
-      setLoading(true);
+      setNameLoading(true);
       const config: AxiosRequestConfig<any> = {
         headers: {
           Authorization: `Bearer ${user?.token}`,
         },
       };
       axios
-        .put(
-          'http://localhost:5000/api/user/rename',
-          { username: changeName },
-          config,
-        )
+        .put(`${BACKEND_API}/api/user/rename`, { username: changeName }, config)
         .then((response) => {
           dispatch(setChatChange(true));
           dispatch(setUser(response.data));
           setNameEdit(false);
+          setNameLoading(false);
         })
         .catch((error) => {
-          console.error('Error:', error);
+          setNameLoading(false);
+          if (error.response) {
+            if (error.response.status === 400) {
+              setError(error.response.data.error);
+            } else {
+              console.error('Server error:', error.response.data.error);
+            }
+          } else if (error.request) {
+            alert(
+              'Cannot reach the server. Please check your internet connection.',
+            );
+          } else {
+            console.error('Error:', error.message);
+          }
         });
     }
   };
@@ -105,18 +132,28 @@ const Profile = () => {
               className="inline clock h-fit w-fit "
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
-              title="Change Icon"
+              title={`${picLoading ? '' : 'Change Icon'}`}
             >
-              <div className=" h-[180px] w-[180px] rounded-full border border-gray-500  bg-gray-400 relative cursor-pointer">
-                {isHovered && (
-                  <label htmlFor="file-input">
-                    <div className="flex flex-col  justify-center items-center h-full w-full rounded-full border border-gray-500  bg-black absolute  top-0 right-0 bg-opacity-30 cursor-pointer">
-                      <FaCamera color="white" />
-                      <p className="text-small text-white">
-                        Change Profile Icon
-                      </p>
-                    </div>
-                  </label>
+              <div
+                className={`h-[180px] w-[180px] rounded-full border border-gray-500  bg-gray-400 relative ${
+                  picLoading ? ' cursor-auto' : 'cursor-pointer'
+                }`}
+              >
+                {picLoading ? (
+                  <div className="flex  justify-center items-center h-full w-full rounded-full border border-gray-500  bg-white absolute  top-0 right-0 bg-opacity-50">
+                    <FadeLoading height={10} width={5} margin={-7} />
+                  </div>
+                ) : (
+                  isHovered && (
+                    <label htmlFor="file-input">
+                      <div className="flex flex-col  justify-center items-center h-full w-full rounded-full border border-gray-500  bg-black absolute  top-0 right-0 bg-opacity-30 cursor-pointer">
+                        <FaCamera color="white" />
+                        <p className="text-small text-white">
+                          Change Profile Icon
+                        </p>
+                      </div>
+                    </label>
+                  )
                 )}
                 <input
                   id="file-input"
@@ -124,6 +161,7 @@ const Profile = () => {
                   type="file"
                   accept="image/*"
                   onChange={handleFileChange}
+                  disabled={picLoading}
                 />
 
                 <div className="flex justify-center items-center h-full w-full rounded-full border border-gray-500  bg-gray-400 cursor-pointer">
@@ -155,8 +193,18 @@ const Profile = () => {
               </p>
             )}
             {nameEdit ? (
-              <button className="mb-1" onClick={handleChangeName} title="save">
-                <FaCheck color="gray" />
+              <button
+                onClick={handleChangeName}
+                title="save"
+                disabled={nameLoading}
+              >
+                {nameLoading ? (
+                  <div className="mb-[-10px] mr-[-15px]">
+                    <FadeLoading height={5} width={3} margin={-12} />
+                  </div>
+                ) : (
+                  <FaCheck color="gray" />
+                )}
               </button>
             ) : (
               <button

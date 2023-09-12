@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedChat } from '../../state/reducers/chat';
+import { setSelectedChat, updateChats } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { setSmallScreen } from '../../state/reducers/screen';
 
@@ -31,10 +31,9 @@ const ChatList2 = () => {
   const dispatch = useDispatch();
 
   const handleSelect = (chat: ChatInfo) => {
-    dispatch(setSelectedChat(chat)), dispatch(setSmallScreen(false));
+    dispatch(setSelectedChat(chat));
+    dispatch(setSmallScreen(false));
   };
-
-  console.log(chats);
 
   return (
     <div className="h-full w-full">
@@ -53,15 +52,18 @@ const ChatList2 = () => {
                 alt="Profile"
                 className="w-[30px] h-[30px] rounded-full bg-gray-400"
               />
-              <div className="flex flex-col items-start w-full ml-[10px]">
+              <div className="flex flex-col items-start w-full ml-[10px] mr-5">
                 <p className="truncate text-left" title={chat.chatName}>
                   {chat.chatName}
                 </p>
-                <div className="w-full flex justify-between items-center">
+                <div className="w-full pr-5 flex justify-between items-center">
                   {chat?.latestMessage && (
                     <p className="truncate text-xs text-left w-full">
                       <span className="font-semibold">
-                        {chat.latestMessage.sender.username}:{' '}
+                        {chat.latestMessage.sender._id === user?.id
+                          ? 'You'
+                          : chat.latestMessage.sender.username}
+                        :{' '}
                       </span>
                       <span className=" ml-[2px] ">
                         {chat.latestMessage.content}
@@ -87,13 +89,13 @@ const ChatList2 = () => {
                 alt="Profile"
                 className="w-[30px] h-[30px] rounded-full bg-gray-400"
               />
-              <div className="flex flex-col items-start w-full max-w-full ml-[10px]">
+              <div className="flex flex-col items-start w-full pr-5 w-full ml-[10px]">
                 <p className="truncate text-left">
                   {chat?.users[0]._id === user?.id
                     ? chat?.users[1].username
                     : chat?.users[0].username}
                 </p>
-                <div className=" w-full flex justify-between">
+                <div className="w-full pr-5 flex justify-between">
                   {chat?.latestMessage && (
                     <p className=" text-xs text-left w-full truncate">
                       {chat.latestMessage.content}

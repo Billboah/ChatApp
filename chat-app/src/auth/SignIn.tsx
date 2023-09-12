@@ -3,12 +3,16 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setUser } from '../state/reducers/auth';
+import { FadeLoading } from '../config/ChatLoading';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { BACKEND_API } from '../config/chatLogics';
 
 export default function SignIn() {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [signInError, setSignInError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -16,7 +20,7 @@ export default function SignIn() {
     setLoading(true);
     e.preventDefault();
     axios
-      .post('http://localhost:5000/api/user/signin', {
+      .post(`${BACKEND_API}/api/user/signin`, {
         name,
         password,
       })
@@ -26,44 +30,92 @@ export default function SignIn() {
         setLoading(false);
       })
       .catch(function (error) {
-        console.log(error);
         setLoading(false);
+        if (error.response) {
+          if (error.response.status === 400) {
+            setSignInError(error.response.data.error);
+          } else {
+            setSignInError(error.response.data.error);
+          }
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
       });
+  };
+
+  const handleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
     <div className="flex flex-col justify-center items-center h-screen w-screen">
-      <div className="flex flex-col justify-center items-center bg-white h-[500px] w-[350px] rounded-xl relative  border-1-inherit shadow-lg">
+      <div className="h-full w-full min-w-[200px] max-h-[650px] max-w-[350px] px-5 flex flex-col justify-center items-center bg-white rounded-xl relative  border-1-inherit shadow-lg">
         <h1 className="font-bold mb-[20px] text-xl text-blue-600">Chat App</h1>
         <h2 className="font-bold mb-[20px] text-xl">Sign In</h2>
         <form
           action=""
           onSubmit={handleSubmit}
-          className="flex flex-col justify-center items-center mb-[10px]"
+          className="w-full flex flex-col justify-center items-center mb-[10px]"
         >
-          <div className="flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+          <div className="w-full flex flex-col">
+            <label
+              className="after:content-['*'] after:ml-0.5 after:text-red-500"
+              htmlFor="signIn-name"
+            >
               User Name or Email
             </label>
             <input
+              id="signIn-name"
               type="text"
               required
-              onChange={(e) => setName(e.target.value)}
-              className="w-[300px] px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+              onChange={(e) => {
+                setName(e.target.value), setSignInError('');
+              }}
+              className="w-full px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
           </div>
-          <div className="flex flex-col">
-            <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
+          <div className="w-full flex flex-col">
+            <label
+              className="after:content-['*'] after:ml-0.5 after:text-red-500"
+              htmlFor="signIn-password"
+            >
               Password
             </label>
-            <input
-              className="w-[300px]  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div>
+              <input
+                className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
+                id="signIn-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value), setSignInError('');
+                }}
+                required
+              />
+              <button
+                type="button"
+                onClick={handleShowPassword}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  marginLeft: '-21px',
+                }}
+              >
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
+              </button>
+            </div>
+          </div>
+          <div className="">
+            {signInError && (
+              <p className="text-sm text-red-500 before:content-['*'] before:text-red-500">
+                {signInError}
+              </p>
+            )}
           </div>
           <div className="w-full text-sm flex justify-between items-center mt-[5px]">
             <div className="flex items-center">
@@ -77,16 +129,20 @@ export default function SignIn() {
           <button
             disabled={loading}
             type="submit"
-            className="w-[300px] p-[5px] mt-[20px] bg-gray-200 rounded-md border-1-inherit shadow-md active:shadow-inner"
+            className="w-full p-[5px] mt-[20px] bg-gray-200 rounded-md border-1-inherit shadow-md active:shadow-inner"
           >
-            {loading ? 'Loading...' : 'Sign In'}
+            {loading ? (
+              <div className="flex h-full justify-center items-center">
+                <div className="h-[2px] w-[2px] mr-3 mt-2">
+                  <FadeLoading height={5} width={3} margin={-12} />
+                </div>
+                <div>Loading...</div>
+              </div>
+            ) : (
+              <span>Sign In</span>
+            )}
           </button>
         </form>
-        {error && (
-          <p className="text-sm text-red-500 before:content-['*'] before:text-red-500">
-            {error}
-          </p>
-        )}
         <div className="text-sm flex rounded-md">
           <div className="mr-[5px]"> Don&apos;t have account?</div>
           <Link to="/signup" className="text-blue-500">

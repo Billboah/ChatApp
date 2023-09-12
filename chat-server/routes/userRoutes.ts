@@ -1,7 +1,6 @@
 // routes/allRoutes.ts
 import { Router, Request, Response } from 'express';
 import {User} from '../models/userModels'
-import asyncHandler from "express-async-handler"
 import generateToken from '../config/generateToken'
 import {authenticate} from '../middleware/authMiddleware'
 
@@ -9,8 +8,10 @@ const router: Router = Router();
 
 
 //Signup router
-router.post('/signup', asyncHandler(async (req: Request, res: Response)=>{
+router.post('/signup', async (req: Request, res: Response)=>{
               const {name, username, email, password, pic, confirmPassword } = req.body
+
+              try{                
             
               if(!name || !email || !password || !username || !confirmPassword){
                             res.status(400);
@@ -20,6 +21,7 @@ router.post('/signup', asyncHandler(async (req: Request, res: Response)=>{
               const userExists = await User.findOne({ $or: [ { username }, { email} ] })
             
               if (userExists){
+                res.status(400);
                             throw new Error("User already exists")
               }
             
@@ -41,12 +43,16 @@ router.post('/signup', asyncHandler(async (req: Request, res: Response)=>{
                                           res.status(400);
                                           throw new Error('Failed to create the User')
               }
-}))
+              
+            }catch(error){
+              res.status(error.status || 500).json({ error: error.message });
+            }
+})
             
 //Signin router
-router.post('/signin', asyncHandler(async (req: Request, res: Response)=>{
+router.post('/signin', async (req: Request, res: Response)=>{
               const {name,  password  } = req.body
-            
+     try{       
               if( !password || !name ){
                             res.status(400);
                             throw new Error('Please enter all the feilds')
@@ -66,9 +72,13 @@ router.post('/signin', asyncHandler(async (req: Request, res: Response)=>{
                             })
                             }else{
                                           res.status(400);
-                                          throw new Error('Invalid username or password')
+                                          throw new Error('Invalid user name or email or password ')
               }
-}))
+              
+            }catch(error){
+              res.status(error.status || 500).json({ error: error.message });
+            }
+})
 
 //get user/users
 router.get('/', authenticate, async(req: Request, res: Response)=>{
@@ -84,7 +94,7 @@ router.get('/', authenticate, async(req: Request, res: Response)=>{
  
      res.json(users);
    } catch (error) {
-     res.status(500).json({ error: 'An error occurred while fetching users.' });
+    res.status(error.status || 500).json({ error: error.message });
    }
 })            
 
@@ -104,7 +114,8 @@ const userId = req.user._id
     )
 
     if (!updatedUser) {
-      return res.status(404).send('User Not Found');
+      res.status(400);
+                            throw new Error('User Not Found');
     }
 
     res.status(201).json({
@@ -117,15 +128,15 @@ const userId = req.user._id
     })
   } catch (error) {
     console.error(error);
-    res.status(400).send(error.message);
+    res.status(error.status || 500).json({ error: error.message });
   }
 }); 
 
 //update profile icon
 router.put('/updatepic', authenticate, async (req: Request, res: Response) => {
   try {
-    const  pic: string = req.body.pic
-const userId = req.user._id
+  const  pic: string = req.body.pic
+  const userId = req.user._id
     const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
@@ -137,7 +148,8 @@ const userId = req.user._id
     )
 
     if (!updatedUser) {
-      return res.status(404).send('Chat Not Found');
+      res.status(400);
+      throw new Error('User Not Found');
     }
 
     res.status(201).json({
@@ -149,8 +161,7 @@ const userId = req.user._id
       token: generateToken(updatedUser._id),
     })
   } catch (error) {
-    console.error(error);
-    res.status(400).send(error.message);
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 

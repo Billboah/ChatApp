@@ -1,14 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FaArrowLeft } from 'react-icons/fa';
+import { FaAngleDown, FaArrowLeft } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { setInfo, setSmallScreen } from '../../state/reducers/screen';
-import { setSelectedChat } from '../../state/reducers/chat';
+import {
+  setNewMessage,
+  setSelectedChat,
+  updateChats,
+} from '../../state/reducers/chat';
 import ChatInfo from './chatInfo';
 import DisplayMessages from './displayMessages';
 import Input from './input';
 import axios, { AxiosRequestConfig } from 'axios';
 import { io } from 'socket.io-client';
 import { RootState } from '../../state/reducers';
+import { ClipLoading } from '../../config/ChatLoading';
+import { BACKEND_API } from '../../config/chatLogics';
 
 interface Users {
   _id: string;
@@ -37,7 +43,7 @@ interface ChatInfo {
 
 let selectedChatCompare: ChatInfo | null;
 
-const socket = io('http://localhost:5000');
+const socket = io(BACKEND_API);
 
 export default function chatMessages() {
   const dispatch = useDispatch();
@@ -45,21 +51,54 @@ export default function chatMessages() {
   const { info } = useSelector((state: RootState) => state.screen);
   const { user } = useSelector((state: RootState) => state.auth);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [messages, setMessages] = useState<Messages[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typer, setTyper] = useState('');
+  const [scrollButton, setScrollButton] = useState(false);
 
   //scrolling to the bottom automatically
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+
+  //key page to the last message
+  const handleScroll = () => {
+    if (scrollContainerRef.current && contentRef.current) {
+      const isAtBottom =
+        scrollContainerRef.current.scrollTop +
+          scrollContainerRef.current.clientHeight ===
+        contentRef.current.scrollHeight;
+
+      if (!isAtBottom) {
+        setScrollButton(true);
+      } else {
+        setScrollButton(false);
+      }
+    }
+  };
+
+  // Attach the scroll event listener when your component mounts
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.addEventListener('scroll', handleScroll);
+    }
+
+    // Remove the event listener when your component unmounts to prevent memory leaks
+    return () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [selectedChat]);
 
   const scrollToBottom = () => {
     if (scrollContainerRef.current && contentRef.current) {
       scrollContainerRef.current.scrollTop =
         contentRef.current.scrollHeight -
         scrollContainerRef.current.clientHeight;
+      setScrollButton(false);
     }
   };
 
@@ -109,19 +148,33 @@ export default function chatMessages() {
     setLoading(true);
     axios
       .post(
-        'http://localhost:5000/api/message/',
+        `${BACKEND_API}/api/message/`,
         { chatId: selectedChat?._id, content: text },
         config,
       )
       .then((response) => {
+        dispatch(setNewMessage(response.data));
         socket.emit('new message', response.data);
         setMessages([...messages, response.data]);
+        dispatch(updateChats(null));
         setLoading(false);
         scrollToBottom;
       })
       .catch((error) => {
-        console.error('Error:', error);
         setLoading(false);
+        if (error.response) {
+          if (error.response.status === 400) {
+            setError(error.response.data.error);
+          } else {
+            console.error('Server error:', error.response.data.error);
+          }
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
       });
   };
 
@@ -137,15 +190,27 @@ export default function chatMessages() {
     };
     setLoadingMessages(true);
     axios
-      .get(`http://localhost:5000/api/message/${selectedChat._id}`, config)
+      .get(`${BACKEND_API}/api/message/${selectedChat._id}`, config)
       .then((response) => {
         setMessages(response.data);
         setLoadingMessages(false);
         socket.emit('join chat', selectedChat._id);
       })
       .catch((error) => {
-        console.error('Error:', error);
         setLoadingMessages(false);
+        if (error.response) {
+          if (error.response.status === 400) {
+            setError(error.response.data.error);
+          } else {
+            console.error('Server error:', error.response.data.error);
+          }
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
       });
   };
 
@@ -160,6 +225,8 @@ export default function chatMessages() {
     socket.on('message received', (newMessageReceived: Messages) => {
       if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
         //give notification
+        dispatch(updateChats(newMessageReceived));
+        console.log(newMessageReceived.chat.users);
       } else {
         setMessages([...messages, newMessageReceived]);
       }
@@ -194,7 +261,7 @@ export default function chatMessages() {
               </button>
               <button
                 onClick={() => dispatch(setInfo(true))}
-                className="h-full w-full flex justify-start items-center max-w-fit min-w-[100px]"
+                className="h-full w-full flex justify-start items-center"
               >
                 <img
                   src={
@@ -209,7 +276,7 @@ export default function chatMessages() {
                   className="rounded-full h-[35px] w-[35px] bg-gray-400"
                 />
 
-                <div className="w-full px-3 flex flex-col items-start ">
+                <div className="w-full min-w-[20px] px-3 flex flex-col items-start ">
                   <p className="text-lg font-extrabold">
                     {selectedChat?.isGroupChat === false
                       ? selectedChat?.users[0]._id === user?.id
@@ -221,9 +288,9 @@ export default function chatMessages() {
                     <div>{typer} typing...</div>
                   ) : selectedChat?.isGroupChat === true &&
                     isTyping === false ? (
-                    <div className="w-full flex max-w-fit">
+                    <div className="w-full flex mr-2  pr-2">
                       <span
-                        className="truncate text-sm text-gray-500"
+                        className=" truncate text-sm text-gray-500"
                         title={selectedChat?.users
                           .map((participant) =>
                             user?.id === participant._id
@@ -252,16 +319,33 @@ export default function chatMessages() {
             </div>
           </nav>
         )}
-        <div
-          className="h-full w-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar"
-          ref={scrollContainerRef}
-        >
-          <DisplayMessages
-            loading={loading}
-            messages={messages}
-            contentRef={contentRef}
-          />
-        </div>
+        {selectedChat && (
+          <div
+            className="h-full w-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar"
+            ref={scrollContainerRef}
+          >
+            {scrollButton && (
+              <button
+                onClick={scrollToBottom}
+                className="rounded-l-md fixed bottom-[55px] right-0 px-3 py-1 bg-black opacity-40 "
+                title="Scroll to latest message"
+              >
+                <FaAngleDown color="white" />
+              </button>
+            )}
+            {loadingMessages ? (
+              <div className="w-full h-full flex justify-center items-center">
+                <ClipLoading size={80} />
+              </div>
+            ) : (
+              <DisplayMessages
+                loading={loading}
+                messages={messages}
+                contentRef={contentRef}
+              />
+            )}
+          </div>
+        )}
         {selectedChat && (
           <Input
             sendMessage={sendMessage}

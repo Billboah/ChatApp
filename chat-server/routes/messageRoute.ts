@@ -45,9 +45,9 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
 
                             res.json(message)
               }catch(error){
-                            console.log(error.message)
+                res.status(error.status || 500).json({ error: error.message });
               }
-})
+}) 
 
 //get chat message
 router.get('/:chatId', authenticate, async (req: Request, res: Response) => {
@@ -56,7 +56,7 @@ router.get('/:chatId', authenticate, async (req: Request, res: Response) => {
                             const message = await Message.find({chat: req.params.chatId})
                             .populate("sender", "username pic email")
                             .populate("chat")
-
+                            
                             await Chat.findByIdAndUpdate(
                               req.params.chatId,
                               {
@@ -66,7 +66,9 @@ router.get('/:chatId', authenticate, async (req: Request, res: Response) => {
                             );
 
                             res.json(message)
-              }catch(error){}
+              }catch(error){
+                res.status(error.status || 500).json({ error: error.message });
+              }
 })
 
 export default router;

@@ -16,6 +16,8 @@ import {
 } from '../../state/reducers/screen';
 import Profile from './profile';
 import { RootState } from '../../state/reducers';
+import { SkeletonLoading } from '../../config/ChatLoading';
+import { BACKEND_API } from '../../config/chatLogics';
 
 interface Users {
   _id: string;
@@ -31,30 +33,41 @@ export default function chatSidebar() {
   const { profile } = useSelector((state: RootState) => state.screen);
   const { chatChange } = useSelector((state: RootState) => state.chat);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
-  const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [selectLoading, setSelectLoading] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState<Users[]>([]);
   const [chatList, setChatList] = useState(true);
 
   //search user
   const handleSearch = async () => {
-    setLoading(true);
+    setSearchLoading(true);
     try {
-      setLoading(true);
+      setSearchLoading(true);
       const config: AxiosRequestConfig<any> = {
         headers: {
           Authorization: `Bearer ${user?.token}`,
         },
       };
       const { data } = await axios.get(
-        `http://localhost:5000/api/user?search=${search}`,
+        `${BACKEND_API}/api/user?search=${search}`,
         config,
       );
       setSearchResult(data);
-      setLoading(false);
-    } catch {
-      setLoading(false);
-      console.log('wrong');
+      setSearchLoading(false);
+    } catch (error: any) {
+      setSearchLoading(false);
+      if (error.response) {
+        console.error('Server error:', error.response.data.error);
+      } else if (error.request) {
+        alert(
+          'Cannot reach the server. Please check your internet connection.',
+        );
+      } else {
+        console.error('Error:', error.message);
+      }
     }
   };
 
@@ -76,13 +89,21 @@ export default function chatSidebar() {
     };
 
     axios
-      .get('http://localhost:5000/api/chat', config)
+      .get(`${BACKEND_API}/api/chat`, config)
       .then((response) => {
         dispatch(setChats(response.data));
         dispatch(setChatChange(false));
       })
       .catch((error) => {
-        console.error('Error:', error);
+        if (error.response) {
+          console.error('Server error:', error.response.data.error);
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
       });
   };
 
@@ -100,10 +121,16 @@ export default function chatSidebar() {
     ) {
       setChatList(true);
       dispatch(setSmallScreen(false));
-      setLoading(false);
+      setSelectLoading((prevSelectLoading: any) => ({
+        ...prevSelectLoading,
+        [userId]: false,
+      }));
       setSearch('');
     } else {
-      setLoading(true);
+      setSelectLoading((prevSelectLoading: any) => ({
+        ...prevSelectLoading,
+        [userId]: true,
+      }));
       const config: AxiosRequestConfig<any> = {
         headers: {
           Authorization: `Bearer ${user?.token}`,
@@ -111,17 +138,32 @@ export default function chatSidebar() {
       };
 
       axios
-        .post('http://localhost:5000/api/chat', { userId }, config)
+        .post(`${BACKEND_API}/api/chat`, { userId }, config)
         .then((response) => {
           dispatch(setSelectedChat(response.data.chat));
           dispatch(setSmallScreen(false));
           setChatList(true);
           dispatch(setChatChange(true));
-          setLoading(false);
+          setSelectLoading((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [userId]: false,
+          }));
           setSearch('');
         })
         .catch((error) => {
-          console.error('Error:', error);
+          setSelectLoading((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [userId]: false,
+          }));
+          if (error.response) {
+            console.error('Server error:', error.response.data.error);
+          } else if (error.request) {
+            alert(
+              'Cannot reach the server. Please check your internet connection.',
+            );
+          } else {
+            console.error('Error:', error.message);
+          }
         });
     }
   };
@@ -134,7 +176,7 @@ export default function chatSidebar() {
             <img
               src={user?.pic}
               alt=""
-              className="rounded-full h-[35px] w-[35px]"
+              className="bg-gray-400 rounded-full h-[35px] w-[35px]"
               title="Profile"
             />
           </button>
@@ -162,16 +204,19 @@ export default function chatSidebar() {
         <div className="w-full h-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
           {chatList ? (
             <ChatList2 />
+          ) : searchLoading ? (
+            <SkeletonLoading />
           ) : searchResult.length === 0 && !chatList ? (
             <div className="text-gray-500 px-[20px] py-[10px]">
               No results found.
             </div>
           ) : (
-            searchResult?.map((user: Users, index) => (
+            searchResult?.map((user: Users) => (
               <ChatList
-                key={index}
+                key={user._id}
                 user={user}
                 handleFunction={() => accessChat(user._id)}
+                selectLoading={selectLoading[user._id]}
               />
             ))
           )}
