@@ -37,7 +37,7 @@ function SignUp() {
       })
       .then(function (response) {
         dispatch(setUser(response.data));
-        navigate('/');
+        navigate('/chat');
         setLoading(false);
       })
       .catch(function (error) {
@@ -259,7 +259,7 @@ function SignUp() {
         <div className="text-sm mt-[5px]">
           <span className="mr-[5px]">Already have an account?</span>
           <span>
-            <Link to="/signin" className="text-blue-500">
+            <Link to="/" className="text-blue-500">
               Sign in instead.
             </Link>
           </span>
