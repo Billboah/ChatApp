@@ -1,1 +1,1 @@
-export const BACKEND_API = 'https://chat-server-brown-three.vercel.app/';
+export const BACKEND_API = 'http://localhost:5000/';
