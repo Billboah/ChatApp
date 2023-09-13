@@ -9,7 +9,7 @@ import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
 
-const ChatInfo = () => {
+function ChatInfo() {
   const dispatch = useDispatch();
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const { user } = useSelector((state: RootState) => state.auth);
@@ -366,6 +366,6 @@ const ChatInfo = () => {
       {addUser && <AddParticipant setAddUser={setAddUser} />}
     </div>
   );
-};
+}
 
 export default ChatInfo;

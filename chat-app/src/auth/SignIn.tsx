@@ -26,7 +26,7 @@ export default function SignIn() {
       })
       .then(function (response) {
         dispatch(setUser(response.data));
-        navigate('/chat');
+        navigate('/');
         setLoading(false);
       })
       .catch(function (error) {

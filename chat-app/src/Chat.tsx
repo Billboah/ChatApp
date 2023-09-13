@@ -7,7 +7,7 @@ import CreateGroupChat from './components/chatSidebar/createGroupChat';
 import { setInfo } from './state/reducers/screen';
 import { RootState } from './state/reducers';
 
-const Chats = () => {
+function Chats  () {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { smallScreen } = useSelector((state: RootState) => state.screen);
@@ -54,6 +54,6 @@ const Chats = () => {
       {newGroup && <CreateGroupChat />}
     </div>
   );
-};
+}
 
 export default Chats;

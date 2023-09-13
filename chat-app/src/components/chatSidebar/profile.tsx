@@ -15,7 +15,7 @@ import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
 
-const Profile = () => {
+function Profile() {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [error, setError] = useState('');
@@ -231,6 +231,6 @@ const Profile = () => {
       </div>
     </div>
   );
-};
+}
 
 export default Profile;

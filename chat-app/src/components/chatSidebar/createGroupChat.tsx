@@ -16,7 +16,7 @@ interface Users {
   email: string;
 }
 
-const CreateGroupChat = () => {
+function CreateGroupChat() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
@@ -81,11 +81,7 @@ const CreateGroupChat = () => {
     const users = JSON.stringify(chatList.map((user) => user._id));
 
     axios
-      .post(
-        `${BACKEND_API}/api/chat/group`,
-        { users, name, pic },
-        config,
-      )
+      .post(`${BACKEND_API}/api/chat/group`, { users, name, pic }, config)
       .then((response) => {
         dispatch(setSelectedChat(response.data));
         dispatch(setSmallScreen(false));
@@ -290,6 +286,6 @@ const CreateGroupChat = () => {
       </div>
     </div>
   );
-};
+}
 
 export default CreateGroupChat;

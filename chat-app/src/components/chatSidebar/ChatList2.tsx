@@ -24,7 +24,7 @@ interface ChatInfo {
   users: Users[];
 }
 
-const ChatList2 = () => {
+function ChatList2() {
   const { chats } = useSelector((state: RootState) => state.chat);
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
@@ -114,6 +114,6 @@ const ChatList2 = () => {
       ))}
     </div>
   );
-};
+}
 
 export default ChatList2;
