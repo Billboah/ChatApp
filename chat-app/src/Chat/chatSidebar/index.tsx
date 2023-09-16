@@ -2,13 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaPlus, FaSearch } from 'react-icons/fa';
 import axios, { AxiosRequestConfig } from 'axios';
-import ChatList from './ChatList';
 import {
   setChatChange,
   setChats,
   setSelectedChat,
 } from '../../state/reducers/chat';
-import ChatList2 from './ChatList2';
 import {
   setNewGroup,
   setProfile,
@@ -16,8 +14,9 @@ import {
 } from '../../state/reducers/screen';
 import Profile from './profile';
 import { RootState } from '../../state/reducers';
-import { SkeletonLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
+import SearchResult from '../../components/serchResult';
+import ChatList from './chatList';
 
 interface Users {
   _id: string;
@@ -27,58 +26,28 @@ interface Users {
   email: string;
 }
 
+interface ChatInfo {
+  groupAdmin: Users;
+  _id: string;
+  pic: string;
+  latestMessage: any;
+  unreadMessages: any[];
+  chatName: string;
+  isGroupChat: boolean;
+  createdAt: string;
+  users: Users[];
+}
+
 export default function chatSidebar() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { profile } = useSelector((state: RootState) => state.screen);
   const { chatChange } = useSelector((state: RootState) => state.chat);
-  const { selectedChat } = useSelector((state: RootState) => state.chat);
-  const [searchLoading, setSearchLoading] = useState(false);
+  const { chats } = useSelector((state: RootState) => state.chat);
   const [selectLoading, setSelectLoading] = useState<{
     [key: string]: boolean;
   }>({});
   const [search, setSearch] = useState('');
-  const [searchResult, setSearchResult] = useState<Users[]>([]);
-  const [chatList, setChatList] = useState(true);
-
-  //search user
-  const handleSearch = async () => {
-    setSearchLoading(true);
-    try {
-      setSearchLoading(true);
-      const config: AxiosRequestConfig<any> = {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
-      };
-      const { data } = await axios.get(
-        `${BACKEND_API}/api/user?search=${search}`,
-        config,
-      );
-      setSearchResult(data);
-      setSearchLoading(false);
-    } catch (error: any) {
-      setSearchLoading(false);
-      if (error.response) {
-        console.error('Server error:', error.response.data.error);
-      } else if (error.request) {
-        alert(
-          'Cannot reach the server. Please check your internet connection.',
-        );
-      } else {
-        console.error('Error:', error.message);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (search === '') {
-      setChatList(true);
-    } else {
-      handleSearch();
-      setChatList(false);
-    }
-  }, [search]);
 
   //display chats
   const displayChats = () => {
@@ -112,61 +81,58 @@ export default function chatSidebar() {
   }, [chatChange === true]);
 
   //select chat
-  const accessChat = (userId: string) => {
-    if (
-      userId ===
-      (selectedChat?.users[0]._id === user?.id
-        ? selectedChat?.users[1]._id
-        : selectedChat?.users[0]._id)
-    ) {
-      setChatList(true);
-      dispatch(setSmallScreen(false));
-      setSelectLoading((prevSelectLoading: any) => ({
-        ...prevSelectLoading,
-        [userId]: false,
-      }));
-      setSearch('');
-    } else {
-      setSelectLoading((prevSelectLoading: any) => ({
-        ...prevSelectLoading,
-        [userId]: true,
-      }));
-      const config: AxiosRequestConfig<any> = {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
-      };
+  const accessChat = (userInfo: Users) => {
+    const userId = userInfo._id;
+    setSelectLoading((prevSelectLoading: any) => ({
+      ...prevSelectLoading,
+      [userId]: true,
+    }));
+    const config: AxiosRequestConfig<any> = {
+      headers: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    };
 
-      axios
-        .post(`${BACKEND_API}/api/chat`, { userId }, config)
-        .then((response) => {
-          dispatch(setSelectedChat(response.data.chat));
-          dispatch(setSmallScreen(false));
-          setChatList(true);
-          dispatch(setChatChange(true));
-          setSelectLoading((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [userId]: false,
-          }));
-          setSearch('');
-        })
-        .catch((error) => {
-          setSelectLoading((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [userId]: false,
-          }));
-          if (error.response) {
-            console.error('Server error:', error.response.data.error);
-          } else if (error.request) {
-            alert(
-              'Cannot reach the server. Please check your internet connection.',
-            );
-          } else {
-            console.error('Error:', error.message);
-          }
-        });
-    }
+    axios
+      .post(`${BACKEND_API}/api/chat`, { userId }, config)
+      .then((response) => {
+        dispatch(setSelectedChat(response.data.chat));
+        dispatch(setSmallScreen(false));
+        dispatch(setChatChange(true));
+        setSelectLoading((prevSelectLoading: any) => ({
+          ...prevSelectLoading,
+          [userId]: false,
+        }));
+        setSearch('');
+      })
+      .catch((error) => {
+        setSelectLoading((prevSelectLoading: any) => ({
+          ...prevSelectLoading,
+          [userId]: false,
+        }));
+        if (error.response) {
+          console.error('Server error:', error.response.data.error);
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
+      });
   };
+
+  const filtered = chats?.filter(
+    (item: { chatName: string; users: any[]; isGroupChat: boolean }) => {
+      if (item.isGroupChat === true) {
+        return item.chatName.toLowerCase().includes(search);
+      } else {
+        return item?.users[0]._id === user?.id
+          ? item.users[1].username.toLowerCase().includes(search)
+          : item.users[0].username.toLowerCase().includes(search);
+      }
+    },
+  );
 
   return (
     <div className="bg-gray-300 h-full w-full relative border border-r-gray-400 border-1">
@@ -202,23 +168,30 @@ export default function chatSidebar() {
         </div>
 
         <div className="w-full h-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
-          {chatList ? (
-            <ChatList2 />
-          ) : searchLoading ? (
-            <SkeletonLoading />
-          ) : searchResult.length === 0 && !chatList ? (
-            <div className="text-gray-500 px-[20px] py-[10px]">
-              No results found.
+          {!search ? (
+            <div className="w-full h-full">
+              {chats.map((chat: ChatInfo) => (
+                <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
+              ))}
             </div>
           ) : (
-            searchResult?.map((user: Users) => (
-              <ChatList
-                key={user._id}
-                user={user}
-                handleFunction={() => accessChat(user._id)}
-                selectLoading={selectLoading[user._id]}
+            <div>
+              {filtered.map((chat: ChatInfo) => (
+                <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
+              ))}
+              <div className="w-full text-sm border-1 relative m-5">
+                <div className="border border-gray-400 "></div>
+                <div className="absolute top-[-10px] left-[38%] text-gray-500 bg-gray-300 w-fit px-2 z-10">
+                  Start a new chat
+                </div>
+              </div>
+              <SearchResult
+                handleFunction={accessChat}
+                selectLoading={selectLoading}
+                search={search}
+                chats={chats}
               />
-            ))
+            </div>
           )}
         </div>
       </div>

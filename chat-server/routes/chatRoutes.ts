@@ -109,7 +109,7 @@ router.post('/group', authenticate, async (req: Request, res: Response) => {
               try {
                 if (!req.body.users || !req.body.name) {
                   res.status(400);
-                  throw new Error( 'Please fill all fields' );
+                  throw new Error( 'Please fill all necessary fields' );
                 }
             
                 const users: IUser[] = JSON.parse(req.body.users);

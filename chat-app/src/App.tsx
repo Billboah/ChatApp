@@ -6,8 +6,8 @@ import {
   Navigate,
 } from 'react-router-dom';
 import Chats from './Chat';
-import SignUp from './auth/SignUp';
-import SignIn from './auth/SignIn';
+import SignUp from './SignUp';
+import SignIn from './SignIn';
 
 function App() {
   return (

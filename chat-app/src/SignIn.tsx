@@ -2,10 +2,10 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { setUser } from '../state/reducers/auth';
-import { FadeLoading } from '../config/ChatLoading';
+import { setUser } from './state/reducers/auth';
+import { FadeLoading } from './config/ChatLoading';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { BACKEND_API } from '../config/chatLogics';
+import { BACKEND_API } from './config/chatLogics';
 
 export default function SignIn() {
   const [name, setName] = useState('');

@@ -35,7 +35,7 @@ server.listen(port, ()=>{
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
-    origin: 'https://chat-app-cyan-two.vercel.app',
+    origin: 'https://chat-app-gold-three.vercel.app/',
   },
 });
 

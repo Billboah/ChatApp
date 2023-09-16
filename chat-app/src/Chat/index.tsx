@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import ChatSidebar from './components/chatSidebar';
-import ChatMessages from './components/chatMessage';
+import ChatSidebar from './chatSidebar';
+import ChatMessages from './chatMessage';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import CreateGroupChat from './components/chatSidebar/createGroupChat';
-import { setInfo } from './state/reducers/screen';
-import { RootState } from './state/reducers';
+import CreateGroupChat from './chatSidebar/createGroupChat';
+import { setInfo } from '../state/reducers/screen';
+import { RootState } from '../state/reducers';
 
-function Chats  () {
+function Chats() {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { smallScreen } = useSelector((state: RootState) => state.screen);

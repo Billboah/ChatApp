@@ -25,13 +25,6 @@ interface Users {
   email: string;
 }
 
-interface Messages {
-  _id: string;
-  sender: Users;
-  content: string;
-  chat: ChatInfo;
-}
-
 interface ChatInfo {
   groupAdmin: Users;
   _id: string;

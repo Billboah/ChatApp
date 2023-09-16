@@ -2,10 +2,10 @@ import axios from 'axios';
 import React, { useState } from 'react';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
-import { setUser } from '../state/reducers/auth';
+import { setUser } from './state/reducers/auth';
 import { useDispatch } from 'react-redux';
-import { FadeLoading } from '../config/ChatLoading';
-import { BACKEND_API } from '../config/chatLogics';
+import { FadeLoading } from './config/ChatLoading';
+import { BACKEND_API } from './config/chatLogics';
 
 type PicStateType = string | undefined;
 

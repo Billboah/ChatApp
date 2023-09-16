@@ -1,12 +1,13 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaCamera, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaCamera, FaTimes } from 'react-icons/fa';
 import { setNewGroup, setSmallScreen } from '../../state/reducers/screen';
 import { setChatChange, setSelectedChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
-import { FadeLoading, SkeletonLoading } from '../../config/ChatLoading';
+import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
+import SearchResult from '../../components/serchResult';
 
 interface Users {
   _id: string;
@@ -20,54 +21,18 @@ function CreateGroupChat() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
-  const [searchResult, setSearchResult] = useState<Users[]>([]);
   const [chatList, setChatList] = useState<Users[]>([]);
-  const [noResult, setNoResult] = useState(false);
   const [name, setName] = useState('');
   const [pic, setPic] = useState<string | undefined>(undefined);
   const ref = useRef<HTMLDivElement | null>(null);
 
-  //search users
-  const handleSearch = async () => {
-    setSearchLoading(true);
-    try {
-      setSearchLoading(true);
-      const config: AxiosRequestConfig<any> = {
-        headers: {
-          Authorization: `Bearer ${user?.token}`,
-        },
-      };
-      const { data } = await axios.get(
-        `${BACKEND_API}/api/user?search=${search}`,
-        config,
-      );
-      data.length !== 0 ? setSearchResult(data) : setNoResult(true);
-      setSearchLoading(false);
-    } catch (error: any) {
-      setSearchLoading(false);
-      if (error.response) {
-        console.error('Server error:', error.response.data.error);
-      } else if (error.request) {
-        alert(
-          'Cannot reach the server. Please check your internet connection.',
-        );
-      } else {
-        console.error('Error:', error.message);
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (search === '') {
-      setSearchResult([]);
-      setNoResult(false);
-    } else {
-      handleSearch();
-    }
-  }, [search]);
+  //selecting or adding users
+  const addUsers = (user: Users) =>
+    chatList?.some((obj) => obj._id === user._id)
+      ? setChatList([...chatList])
+      : setChatList([...chatList, user]);
 
   //create group chat
   const handleCreateGroup = () => {
@@ -138,7 +103,7 @@ function CreateGroupChat() {
     <div className="flex justify-center items-center absolute top-0 left-0 h-full w-full  bg-black bg-opacity-30 z-30">
       <div
         ref={ref}
-        className="flex flex-col items-center w-full h-full max-h-[500px] max-w-[400px] px-[20px] py-[40px] bg-gray-200 relative rounded-[10px]"
+        className="flex flex-col items-center w-full h-fit max-h-[550px]  max-w-[400px] px-[20px] py-[40px] bg-gray-200 relative rounded-[10px]"
       >
         <h2 className="text-xl font-bold mb-[20px]">Create a new group chat</h2>
         <input
@@ -214,51 +179,12 @@ function CreateGroupChat() {
         </div>
 
         <div className="flex-1 w-full overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
-          {searchLoading ? (
-            <SkeletonLoading />
-          ) : (
-            <>
-              {noResult && (
-                <p className="text-lg text-gray-500">No result found</p>
-              )}
-              {searchResult.map((user) => (
-                <button
-                  key={user?._id}
-                  onClick={() =>
-                    chatList?.some((obj) => obj._id === user._id)
-                      ? setChatList([...chatList])
-                      : setChatList([...chatList, user])
-                  }
-                  className={`w-full justify-center ${
-                    noResult ? 'hidden' : 'flex'
-                  }`}
-                >
-                  <div className="w-full flex items-center">
-                    <img
-                      src={user.pic}
-                      alt="Profile"
-                      className="w-[30px] h-[30px] rounded-full"
-                    />
-                    <div className="flex flex-col items-start min-w-[20px]  ml-[10px]">
-                      <p className="truncate text-left" title={user.username}>
-                        {user.username}
-                      </p>
-                      <p
-                        className=" text-sm text-left w-full truncate "
-                        title={user.email}
-                      >
-                        <span className="font-semibold">Email: </span>
-                        <span className=" ml-2 ">{user.email}</span>
-                      </p>
-                    </div>
-                  </div>
-                  {chatList?.some((obj) => obj._id === user._id) && (
-                    <FaCheck color="gray" />
-                  )}
-                </button>
-              ))}
-            </>
-          )}
+          <SearchResult
+            handleFunction={addUsers}
+            search={search}
+            chats={[]}
+            selectLoading={null}
+          />
         </div>
 
         <button
@@ -267,6 +193,7 @@ function CreateGroupChat() {
         >
           <FaTimes size={20} />
         </button>
+
         <button
           className="w-[200px] absolute bottom-0 right-0 font-bold bg-gray-400 active:bg-gray-500 rounded-3xl m-2 px-3 py-1"
           onClick={handleCreateGroup}
