@@ -31,7 +31,7 @@ router.post('/signup', async (req: Request, res: Response)=>{
             
               if (user){
                             res.status(201).json({
-                                          id: user._id,
+                                          _id: user._id,
                                           name: user.name,
                                           username: user.username,
                                           email: user.email,
@@ -63,7 +63,7 @@ router.post('/signin', async (req: Request, res: Response)=>{
             
               if (user && (await user.comparePassword(password))){
                             res.status(201).json({
-                                          id: user._id,
+                                          _id: user._id,
                                           name: user.name,
                                           username: user.username,
                                           email: user.email,

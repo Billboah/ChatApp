@@ -21,6 +21,7 @@ router.post('/', authenticate, async (req: Request, res: Response) => {
                                           sender: req.user._id,
                                           content: content,
                                           chat: chatId,
+                                          delivered: true,
                                         });
                                     
                                         const message = await Message.findById(newMessage._id)
