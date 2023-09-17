@@ -29,6 +29,8 @@ interface Messages {
   sender: Users;
   content: string;
   chat: ChatInfo;
+  delivered: boolean;
+  updatedAt: string;
 }
 
 interface ChatInfo {
@@ -50,8 +52,9 @@ export default function chatMessages() {
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const { info } = useSelector((state: RootState) => state.screen);
   const { user } = useSelector((state: RootState) => state.auth);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [messageLoadingError, setMessageLoadingError] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [messages, setMessages] = useState<Messages[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -63,7 +66,6 @@ export default function chatMessages() {
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
-  //key page to the last message
   const handleScroll = () => {
     if (scrollContainerRef.current && contentRef.current) {
       const isAtBottom =
@@ -79,13 +81,11 @@ export default function chatMessages() {
     }
   };
 
-  // Attach the scroll event listener when your component mounts
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.addEventListener('scroll', handleScroll);
     }
 
-    // Remove the event listener when your component unmounts to prevent memory leaks
     return () => {
       if (scrollContainerRef.current) {
         scrollContainerRef.current.removeEventListener('scroll', handleScroll);
@@ -137,7 +137,8 @@ export default function chatMessages() {
   };
 
   //send a message
-  const sendMessage = (text: string) => {
+  const sendMessage = (message: any) => {
+    setMessages([...messages, message]);
     const config: AxiosRequestConfig<any> = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
@@ -145,35 +146,55 @@ export default function chatMessages() {
     };
 
     socket.emit('stop typing', selectedChat?._id);
-    setLoading(true);
     axios
       .post(
         `${BACKEND_API}/api/message/`,
-        { chatId: selectedChat?._id, content: text },
+        { chatId: selectedChat?._id, content: message.content },
         config,
       )
       .then((response) => {
+        const messageIndex = messages.findIndex(
+          (msg) => msg._id === message._id,
+        );
+
+        if (messageIndex === -1) {
+          setMessages([...messages, response.data]);
+        } else {
+          const updatedMessages = [...messages];
+          updatedMessages[messageIndex] = response.data;
+          setMessages(updatedMessages);
+        }
+
         dispatch(setNewMessage(response.data));
         socket.emit('new message', response.data);
-        setMessages([...messages, response.data]);
         dispatch(updateChats(null));
-        setLoading(false);
         scrollToBottom;
       })
       .catch((error) => {
-        setLoading(false);
         if (error.response) {
-          if (error.response.status === 400) {
-            setError(error.response.data.error);
-          } else {
-            console.error('Server error:', error.response.data.error);
-          }
+          setMessageLoadingError((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [message]: false,
+          }));
+          console.error('Server error:', error.response.data.error);
+          setMessageLoadingError((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [message]: false,
+          }));
         } else if (error.request) {
           alert(
             'Cannot reach the server. Please check your internet connection.',
           );
+          setMessageLoadingError((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [message]: false,
+          }));
         } else {
           console.error('Error:', error.message);
+          setMessageLoadingError((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [message]: false,
+          }));
         }
       });
   };
@@ -199,11 +220,7 @@ export default function chatMessages() {
       .catch((error) => {
         setLoadingMessages(false);
         if (error.response) {
-          if (error.response.status === 400) {
-            setError(error.response.data.error);
-          } else {
-            console.error('Server error:', error.response.data.error);
-          }
+          console.error('Server error:', error.response.data.error);
         } else if (error.request) {
           alert(
             'Cannot reach the server. Please check your internet connection.',
@@ -226,7 +243,6 @@ export default function chatMessages() {
       if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
         //give notification
         dispatch(updateChats(newMessageReceived));
-        console.log(newMessageReceived.chat.users);
       } else {
         setMessages([...messages, newMessageReceived]);
       }
@@ -266,7 +282,7 @@ export default function chatMessages() {
                 <img
                   src={
                     selectedChat?.isGroupChat === false
-                      ? selectedChat?.users[0]._id === user?.id
+                      ? selectedChat?.users[0]._id === user?._id
                         ? selectedChat?.users[1].pic
                         : selectedChat?.users[0].pic
                       : selectedChat?.pic
@@ -279,7 +295,7 @@ export default function chatMessages() {
                 <div className="w-full min-w-[20px] px-3 flex flex-col items-start ">
                   <p className="text-lg font-extrabold">
                     {selectedChat?.isGroupChat === false
-                      ? selectedChat?.users[0]._id === user?.id
+                      ? selectedChat?.users[0]._id === user?._id
                         ? selectedChat?.users[1].username
                         : selectedChat?.users[0].username
                       : selectedChat?.chatName}
@@ -293,7 +309,7 @@ export default function chatMessages() {
                         className=" truncate text-sm text-gray-500"
                         title={selectedChat?.users
                           .map((participant) =>
-                            user?.id === participant._id
+                            user?._id === participant._id
                               ? 'You'
                               : participant.username,
                           )
@@ -301,7 +317,7 @@ export default function chatMessages() {
                       >
                         {selectedChat?.users
                           .map((participant) =>
-                            user?.id === participant._id
+                            user?._id === participant._id
                               ? 'You'
                               : participant.username,
                           )
@@ -328,7 +344,7 @@ export default function chatMessages() {
               <button
                 onClick={scrollToBottom}
                 className="rounded-l-md fixed bottom-[55px] right-0 px-3 py-1 bg-black opacity-40 "
-                title="Scroll to latest message"
+                title="Move to the latest message"
               >
                 <FaAngleDown color="white" />
               </button>
@@ -339,7 +355,7 @@ export default function chatMessages() {
               </div>
             ) : (
               <DisplayMessages
-                loading={loading}
+                messageLoadingError={messageLoadingError}
                 messages={messages}
                 contentRef={contentRef}
               />

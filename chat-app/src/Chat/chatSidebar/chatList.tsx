@@ -64,7 +64,7 @@ const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
               {chat?.latestMessage && (
                 <p className="truncate text-xs text-left w-full">
                   <span className="font-semibold">
-                    {chat.latestMessage.sender._id === user?.id
+                    {chat.latestMessage.sender._id === user?._id
                       ? 'You'
                       : chat.latestMessage.sender.username}
                     :{' '}
@@ -86,7 +86,7 @@ const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
         <div className="w-full flex items-center ">
           <img
             src={
-              chat?.users[0]._id === user?.id
+              chat?.users[0]._id === user?._id
                 ? chat?.users[1].pic
                 : chat?.users[0].pic
             }
@@ -95,7 +95,7 @@ const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
           />
           <div className="flex flex-col items-start w-full pr-5 w-full ml-[10px]">
             <p className="truncate text-left">
-              {chat?.users[0]._id === user?.id
+              {chat?.users[0]._id === user?._id
                 ? chat?.users[1].username
                 : chat?.users[0].username}
             </p>

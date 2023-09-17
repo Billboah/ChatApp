@@ -127,7 +127,7 @@ export default function chatSidebar() {
       if (item.isGroupChat === true) {
         return item.chatName.toLowerCase().includes(search);
       } else {
-        return item?.users[0]._id === user?.id
+        return item?.users[0]._id === user?._id
           ? item.users[1].username.toLowerCase().includes(search)
           : item.users[0].username.toLowerCase().includes(search);
       }

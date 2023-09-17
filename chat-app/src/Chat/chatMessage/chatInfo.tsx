@@ -142,7 +142,7 @@ function ChatInfo() {
         )}
       </nav>
       <div className="flex flex-col relative  h-full m-0 p-0 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
-        <div className="flex items-center justify-center h-fit w-full py-[30px] px-[20px]  mb-[7px] bg-gray-300">
+        <section className="flex items-center justify-center h-fit w-full py-[30px] px-[20px]  mb-[7px] bg-gray-300">
           {selectedChat?.isGroupChat ? (
             <div className="flex flex-col justify-center items-center">
               <div
@@ -237,7 +237,7 @@ function ChatInfo() {
             <div className="flex flex-col justify-center items-center">
               <img
                 src={
-                  selectedChat?.users[0]._id === user?.id
+                  selectedChat?.users[0]._id === user?._id
                     ? selectedChat?.users[1].pic
                     : selectedChat?.users[0].pic
                 }
@@ -245,35 +245,36 @@ function ChatInfo() {
                 className=" h-[180px] w-[180px] rounded-full border border-gray-500  bg-gray-400 "
               />
               <p className="text-lg font-bold mt-[10px]">
-                {selectedChat?.users[0]._id === user?.id
+                {selectedChat?.users[0]._id === user?._id
                   ? selectedChat?.users[1].username
                   : selectedChat?.users[0].username}
               </p>
               <p className="text-md truncate text-gray-600">
                 <span className="font-bold mr-1">Email:</span>
                 <span>
-                  {selectedChat?.users[0]._id === user?.id
+                  {selectedChat?.users[0]._id === user?._id
                     ? selectedChat?.users[1].email
                     : selectedChat?.users[0].email}
                 </span>
               </p>
             </div>
           )}
-        </div>
-        <div className="mb-[7px] px-[20px] py-[10px] bg-gray-300 h-fit w-full">
+        </section>
+        <section className="mb-[7px] px-[20px] py-[10px] bg-gray-300 h-fit w-full">
           <div className="flex justify-between items-center">
             <p>media, links, and docs</p>
           </div>
-        </div>
+        </section>
+
         {selectedChat?.isGroupChat && (
-          <div className="mb-[7px]  py-[10px] bg-gray-300 h-fit w-full">
+          <section className="mb-[7px]  py-[10px] bg-gray-300 h-fit w-full">
             <div className="flex flex-col ">
               <div className="flex justify-between items-center w-full mb-[7px] px-[20px]">
                 <p className="text-gray-600">
                   {selectedChat?.users.length}
                   {'  '}participants
                 </p>
-                {selectedChat?.groupAdmin._id === user?.id && (
+                {selectedChat?.groupAdmin._id === user?._id && (
                   <button
                     onClick={() => setAddUser(true)}
                     className="px-[10px]   bg-gray-200 rounded-md border-1-inherit shadow-md active:shadow-inner"
@@ -294,7 +295,7 @@ function ChatInfo() {
                       className="w-[30px] h-[30px] rounded-full bg-gray-400"
                     />
                     <div className="w-full min-w-[50px] flex flex-col  items-start mx-2">
-                      {participant._id === user?.id ? (
+                      {participant._id === user?._id ? (
                         <p className="w-full  text-left ">You</p>
                       ) : (
                         <p className="w-full  truncate text-left pr-2">
@@ -312,7 +313,7 @@ function ChatInfo() {
                       <p className="text-sm text-blue-800">Admin</p>
                     </div>
                   )}
-                  {selectedChat?.groupAdmin._id === user?.id && (
+                  {selectedChat?.groupAdmin._id === user?._id && (
                     <button
                       title="Remove a participant"
                       onClick={() => handleRemoveUser(participant._id)}
@@ -333,27 +334,28 @@ function ChatInfo() {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
-        <div className=" pb-16 bg-gray-300 h-full w-full">
+
+        <section className=" pb-16 bg-gray-300 h-full w-full">
           <div className="flex justify-between items-center text-red-500">
             {selectedChat?.isGroupChat ? (
               <div className="w-full">
                 {user && (
                   <button
-                    onClick={() => handleRemoveUser(user.id)}
+                    onClick={() => handleRemoveUser(user._id)}
                     className="w-full flex justify-between items-center border-b border-gray-400 px-[20px] py-[10px] hover:bg-gray-200 outline-none"
-                    disabled={memberLoading[user.id]}
+                    disabled={memberLoading[user._id]}
                   >
                     <div>Exit group</div>
-                    {memberLoading[user.id] && (
+                    {memberLoading[user._id] && (
                       <div className="flex justify-center items-center mb-[-30px] mr-[-10px] ">
                         <FadeLoading height={5} width={3} margin={-12} />
                       </div>
                     )}
                   </button>
                 )}
-                {selectedChat?.groupAdmin._id === user?.id && (
+                {selectedChat?.groupAdmin._id === user?._id && (
                   <p className="px-[20px]">Delete group chat</p>
                 )}
               </div>
@@ -361,7 +363,7 @@ function ChatInfo() {
               <p className="px-[20px]">Delete chat</p>
             )}
           </div>
-        </div>
+        </section>
       </div>
       {addUser && <AddParticipant setAddUser={setAddUser} />}
     </div>

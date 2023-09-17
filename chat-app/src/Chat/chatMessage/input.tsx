@@ -1,9 +1,12 @@
 import React, { ChangeEvent, useState } from 'react';
 import { FaMicrophone } from 'react-icons/fa';
 import SendIcon from '@mui/icons-material/Send';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../state/reducers';
+import { v4 as uuidv4 } from 'uuid';
 
 type Props = {
-  sendMessage: (text: string) => void;
+  sendMessage: (message: any) => void;
   typingLogic: () => void;
   handleStopTyping: () => void;
 };
@@ -13,13 +16,28 @@ const Input: React.FC<Props> = ({
   typingLogic,
   handleStopTyping,
 }) => {
+  const { selectedChat } = useSelector((state: RootState) => state.chat);
+  const { user } = useSelector((state: RootState) => state.auth);
   const [input, setInput] = useState('');
+
+  function generateClientId() {
+    return uuidv4();
+  }
 
   //send message
   const handleSendMessage = (e: any) => {
     e.preventDefault();
+    const inputMessage: any = {
+      _id: generateClientId(),
+      sender: user,
+      content: input,
+      chat: selectedChat,
+      delivered: false,
+      updatedAt: new Date(),
+    };
+
     if (input.trim() !== '') {
-      sendMessage(input);
+      sendMessage(inputMessage);
       setInput('');
       resetTextareaHeight();
     }
@@ -43,6 +61,7 @@ const Input: React.FC<Props> = ({
 
   const handleInput = (event: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(event.target.value);
+
     const textarea = event.target;
     textarea.style.minHeight = '30px';
     textarea.style.height = '30px';
@@ -74,7 +93,7 @@ const Input: React.FC<Props> = ({
           <div>
             {input ? (
               <button type="submit">
-                <SendIcon />
+                <SendIcon color="disabled" />
               </button>
             ) : (
               <FaMicrophone color="gray" size={20} />

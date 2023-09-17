@@ -98,7 +98,7 @@ const SearchResult: React.FC<Props> = ({
   }, [search]);
 
   return (
-    <div className="w-full h-full">
+    <section className="w-full h-full">
       {searchLoading ? (
         <SkeletonLoading />
       ) : noResult ? (
@@ -128,7 +128,7 @@ const SearchResult: React.FC<Props> = ({
                   </p>
                 </div>
               </div>
-              {selectLoading && (
+              {selectLoading !== null && selectLoading[user._id] && (
                 <div className="h-[2px] w-[2px] mr-3 mt-2">
                   <FadeLoading height={5} width={3} margin={-12} />
                 </div>
@@ -137,7 +137,7 @@ const SearchResult: React.FC<Props> = ({
           </button>
         ))
       )}
-    </div>
+    </section>
   );
 };
 
