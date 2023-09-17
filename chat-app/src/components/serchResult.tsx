@@ -51,7 +51,7 @@ const SearchResult: React.FC<Props> = ({
           (user: { username: string }) => !chatUserIds.includes(user.username),
         );
 
-        usersNotInAnyChat.length !== 0
+        usersNotInAnyChat !== null
           ? setSearchResult(usersNotInAnyChat)
           : setNoResult(true);
       }
