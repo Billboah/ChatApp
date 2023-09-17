@@ -8,14 +8,7 @@ import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
 import SearchResult from '../../components/serchResult';
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
+import { User } from '../../types';
 
 function CreateGroupChat() {
   const dispatch = useDispatch();
@@ -23,13 +16,13 @@ function CreateGroupChat() {
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
-  const [chatList, setChatList] = useState<Users[]>([]);
+  const [chatList, setChatList] = useState<User[]>([]);
   const [name, setName] = useState('');
   const [pic, setPic] = useState<string | undefined>(undefined);
   const ref = useRef<HTMLDivElement | null>(null);
 
   //selecting or adding users
-  const addUsers = (user: Users) =>
+  const addUsers = (user: User) =>
     chatList?.some((obj) => obj._id === user._id)
       ? setChatList([...chatList])
       : setChatList([...chatList, user]);
@@ -182,7 +175,7 @@ function CreateGroupChat() {
           <SearchResult
             handleFunction={addUsers}
             search={search}
-            chats={[]}
+            chats={null}
             selectLoading={null}
           />
         </div>

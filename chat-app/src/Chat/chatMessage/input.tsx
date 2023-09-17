@@ -4,9 +4,10 @@ import SendIcon from '@mui/icons-material/Send';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../state/reducers';
 import { v4 as uuidv4 } from 'uuid';
+import { Message } from '../../types';
 
 type Props = {
-  sendMessage: (message: any) => void;
+  sendMessage: (message: Message) => void;
   typingLogic: () => void;
   handleStopTyping: () => void;
 };

@@ -3,38 +3,19 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { setSmallScreen } from '../../state/reducers/screen';
+import { Chat } from '../../types';
 
 type Props = {
-  chat: ChatInfo;
+  chat: Chat;
   setSearch: Dispatch<SetStateAction<string>>;
 };
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
-
-interface ChatInfo {
-  groupAdmin: Users;
-  _id: string;
-  pic: string;
-  latestMessage: any;
-  unreadMessages: any[];
-  chatName: string;
-  isGroupChat: boolean;
-  createdAt: string;
-  users: Users[];
-}
 
 const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch();
 
-  const handleSelect = (chat: ChatInfo) => {
+  const handleSelect = (chat: Chat) => {
     dispatch(setSelectedChat(chat));
     dispatch(setSmallScreen(false));
   };
@@ -93,7 +74,7 @@ const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
             alt="Profile"
             className="w-[30px] h-[30px] rounded-full bg-gray-400"
           />
-          <div className="flex flex-col items-start w-full pr-5 w-full ml-[10px]">
+          <div className="flex flex-col items-start w-full pr-5 ml-[10px]">
             <p className="truncate text-left">
               {chat?.users[0]._id === user?._id
                 ? chat?.users[1].username

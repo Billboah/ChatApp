@@ -5,33 +5,14 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { RootState } from '../state/reducers';
 import { useSelector } from 'react-redux';
 import { SkeletonLoading } from '../config/ChatLoading';
+import { Chat, User } from '../types';
 
 type Props = {
-  handleFunction: (userInfo: Users) => void;
+  handleFunction: (userInfo: User) => void;
   selectLoading: { [key: string]: boolean } | null;
   search: string;
-  chats: ChatInfo[];
+  chats: Chat[] | null;
 };
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
-
-interface ChatInfo {
-  groupAdmin: Users;
-  _id: string;
-  pic: string;
-  latestMessage: any;
-  unreadMessages: any[];
-  chatName: string;
-  isGroupChat: boolean;
-  createdAt: string;
-  users: Users[];
-}
 
 const SearchResult: React.FC<Props> = ({
   handleFunction,
@@ -41,7 +22,7 @@ const SearchResult: React.FC<Props> = ({
 }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [searchLoading, setSearchLoading] = useState(false);
-  const [searchResult, setSearchResult] = useState<Users[]>([]);
+  const [searchResult, setSearchResult] = useState<User[]>([]);
   const [noResult, setNoResult] = useState(false);
 
   //search user
@@ -59,19 +40,21 @@ const SearchResult: React.FC<Props> = ({
         config,
       );
 
-      const chatUserIds = chats
-        .filter((chat: ChatInfo) => !chat.isGroupChat)
-        .flatMap((chat: ChatInfo) =>
-          chat.users.map((user: Users) => user.username),
+      if (chats) {
+        const chatUserIds = chats
+          .filter((chat: Chat) => !chat.isGroupChat)
+          .flatMap((chat: Chat) =>
+            chat.users.map((user: User) => user.username),
+          );
+
+        const usersNotInAnyChat = data.filter(
+          (user: { username: string }) => !chatUserIds.includes(user.username),
         );
 
-      const usersNotInAnyChat = data.filter(
-        (user: { username: string }) => !chatUserIds.includes(user.username),
-      );
-
-      usersNotInAnyChat.length !== 0
-        ? setSearchResult(usersNotInAnyChat)
-        : setNoResult(true);
+        usersNotInAnyChat.length !== 0
+          ? setSearchResult(usersNotInAnyChat)
+          : setNoResult(true);
+      }
 
       setSearchLoading(false);
     } catch (error: any) {
@@ -106,7 +89,7 @@ const SearchResult: React.FC<Props> = ({
           No results found.
         </div>
       ) : (
-        searchResult?.map((user: Users) => (
+        searchResult?.map((user: User) => (
           <button
             className={`hover:bg-gray-200 active:bg-gray-300  w-full h-[70px] px-[20px] py-[10px]`}
             onClick={() => handleFunction(user)}

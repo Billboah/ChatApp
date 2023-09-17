@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import React, {
   Dispatch,
   SetStateAction,
@@ -6,21 +6,14 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { FaCheck, FaTimes } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { setChatChange, setSelectedChat } from '../../state/reducers/chat';
-import { RootState } from '../../state/reducers';
-import { FadeLoading, SkeletonLoading } from '../../config/ChatLoading';
-import { BACKEND_API } from '../../config/chatLogics';
-import SearchResult from '../../components/serchResult';
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
+import { setChatChange, setSelectedChat } from '../../../state/reducers/chat';
+import { RootState } from '../../../state/reducers';
+import { FadeLoading } from '../../../config/ChatLoading';
+import { BACKEND_API } from '../../../config/chatLogics';
+import SearchResult from '../../../components/serchResult';
+import { User } from '../../../types';
 
 interface UserProps {
   setAddUser: Dispatch<SetStateAction<boolean>>;
@@ -32,12 +25,12 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
   const [error, setError] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
-  const [chatList, setChatList] = useState<Users[]>([]);
+  const [chatList, setChatList] = useState<User[]>([]);
   const [addLoading, setAddLoading] = useState(false);
   const dispatch = useDispatch();
 
   //selecting or adding users
-  const addUsers = (user: Users) =>
+  const addUsers = (user: User) =>
     chatList?.some((obj) => obj._id === user._id)
       ? setChatList([...chatList])
       : setChatList([...chatList, user]);
@@ -133,7 +126,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
           <SearchResult
             handleFunction={addUsers}
             search={search}
-            chats={[]}
+            chats={null}
             selectLoading={null}
           />
         </div>

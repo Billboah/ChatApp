@@ -15,35 +15,7 @@ import { io } from 'socket.io-client';
 import { RootState } from '../../state/reducers';
 import { ClipLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
-
-interface Messages {
-  _id: string;
-  sender: Users;
-  content: string;
-  chat: ChatInfo;
-  delivered: boolean;
-  updatedAt: string;
-}
-
-interface ChatInfo {
-  groupAdmin: Users;
-  _id: string;
-  pic: string;
-  chatName: string;
-  isGroupChat: boolean;
-  createdAt: string;
-  users: Users[];
-}
-
-let selectedChatCompare: ChatInfo | null;
+import { Chat, Message } from '../../types';
 
 const socket = io(BACKEND_API);
 
@@ -55,7 +27,7 @@ export default function chatMessages() {
   const [messageLoadingError, setMessageLoadingError] = useState<{
     [key: string]: boolean;
   }>({});
-  const [messages, setMessages] = useState<Messages[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [socketConnected, setSocketConnected] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -233,13 +205,11 @@ export default function chatMessages() {
 
   useEffect(() => {
     displayMessages();
-
-    selectedChatCompare = selectedChat;
   }, [selectedChat]);
 
   //add message to messages and tell when one is typing in socket.io
   useEffect(() => {
-    socket.on('message received', (newMessageReceived: Messages) => {
+    socket.on('message received', (newMessageReceived: Message) => {
       if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
         //give notification
         dispatch(updateChats(newMessageReceived));

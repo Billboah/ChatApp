@@ -4,41 +4,17 @@ import { RootState } from '../../state/reducers';
 import { FaExclamationCircle, FaRegClock } from 'react-icons/fa';
 import DoneIcon from '@mui/icons-material/Done';
 import { format, isToday, isYesterday } from 'date-fns';
+import { Message } from '../../types';
 
 type Props = {
   messageLoadingError: { [key: string]: boolean };
   messages: {
     map(
-      arg0: (message: {
-        _id: string;
-        sender: Users;
-        content: string;
-        chat: ChatInfo;
-        delivered: boolean;
-        updatedAt: string;
-      }) => import('react/jsx-runtime').JSX.Element,
+      arg0: (message: Message) => import('react/jsx-runtime').JSX.Element,
     ): React.ReactNode;
   };
   contentRef: React.MutableRefObject<HTMLDivElement | null>;
 };
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
-
-interface ChatInfo {
-  groupAdmin: Users;
-  _id: string;
-  pic: string;
-  chatName: string;
-  isGroupChat: boolean;
-  createdAt: string;
-  users: Users[];
-}
 
 const DisplayMessages: React.FC<Props> = ({
   messageLoadingError,

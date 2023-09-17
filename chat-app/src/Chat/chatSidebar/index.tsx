@@ -17,26 +17,7 @@ import { RootState } from '../../state/reducers';
 import { BACKEND_API } from '../../config/chatLogics';
 import SearchResult from '../../components/serchResult';
 import ChatList from './chatList';
-
-interface Users {
-  _id: string;
-  username: string;
-  pic: string;
-  name: string;
-  email: string;
-}
-
-interface ChatInfo {
-  groupAdmin: Users;
-  _id: string;
-  pic: string;
-  latestMessage: any;
-  unreadMessages: any[];
-  chatName: string;
-  isGroupChat: boolean;
-  createdAt: string;
-  users: Users[];
-}
+import { Chat, User } from '../../types';
 
 export default function chatSidebar() {
   const dispatch = useDispatch();
@@ -81,7 +62,7 @@ export default function chatSidebar() {
   }, [chatChange === true]);
 
   //select chat
-  const accessChat = (userInfo: Users) => {
+  const accessChat = (userInfo: User) => {
     const userId = userInfo._id;
     setSelectLoading((prevSelectLoading: any) => ({
       ...prevSelectLoading,
@@ -122,7 +103,7 @@ export default function chatSidebar() {
       });
   };
 
-  const filtered = chats?.filter(
+  const filteredChats = chats?.filter(
     (item: { chatName: string; users: any[]; isGroupChat: boolean }) => {
       if (item.isGroupChat === true) {
         return item.chatName.toLowerCase().includes(search);
@@ -170,15 +151,18 @@ export default function chatSidebar() {
         <div className="w-full h-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
           {!search ? (
             <div className="w-full h-full">
-              {chats.map((chat: ChatInfo) => (
-                <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
-              ))}
+              {chats !== null &&
+                chats.map((chat: Chat) => (
+                  <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
+                ))}
             </div>
           ) : (
-            <div>
-              {filtered.map((chat: ChatInfo) => (
+            <div className="w-full h-fit">
+              {filteredChats &&(
+              filteredChats.map((chat: Chat) => (
                 <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
-              ))}
+              ))
+              )}
               <div className="w-full text-sm border-1 relative m-5">
                 <div className="border border-gray-400 "></div>
                 <div className="absolute top-[-10px] left-[38%] text-gray-500 bg-gray-300 w-fit px-2 z-10">

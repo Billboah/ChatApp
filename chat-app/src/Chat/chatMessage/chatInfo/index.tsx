@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { FaCamera, FaCheck, FaPen, FaTimes } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { setInfo } from '../../state/reducers/screen';
+import { setInfo } from '../../../state/reducers/screen';
 import axios, { AxiosRequestConfig } from 'axios';
-import { setChatChange, setSelectedChat } from '../../state/reducers/chat';
+import { setChatChange, setSelectedChat } from '../../../state/reducers/chat';
 import AddParticipant from './addParticipant';
-import { RootState } from '../../state/reducers';
-import { FadeLoading } from '../../config/ChatLoading';
-import { BACKEND_API } from '../../config/chatLogics';
+import { RootState } from '../../../state/reducers';
+import { FadeLoading } from '../../../config/ChatLoading';
+import { BACKEND_API } from '../../../config/chatLogics';
 
 function ChatInfo() {
   const dispatch = useDispatch();
