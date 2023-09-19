@@ -45,7 +45,7 @@ const DisplayMessages: React.FC<Props> = ({
               <img
                 src={message.sender.pic}
                 alt="sender pic"
-                className="h-[20px] w-[20px] rounded-full bg-gray-500"
+                className="h-[20px] w-[20px] rounded-full bg-gray-400"
               />
             </div>
           )}

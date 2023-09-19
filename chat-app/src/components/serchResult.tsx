@@ -51,7 +51,7 @@ const SearchResult: React.FC<Props> = ({
           (user: { username: string }) => !chatUserIds.includes(user.username),
         );
 
-        usersNotInAnyChat !== null
+        usersNotInAnyChat.length !== 0
           ? setSearchResult(usersNotInAnyChat)
           : setNoResult(true);
       }
@@ -61,11 +61,14 @@ const SearchResult: React.FC<Props> = ({
       setSearchLoading(false);
       if (error.response) {
         console.error('Server error:', error.response.data.error);
+        setNoResult(true);
       } else if (error.request) {
         alert(
           'Cannot reach the server. Please check your internet connection.',
         );
+        setNoResult(true);
       } else {
+        setNoResult(true);
         console.error('Error:', error.message);
       }
     }

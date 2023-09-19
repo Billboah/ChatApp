@@ -20,6 +20,10 @@ const UserSchema = new mongoose.Schema({
                 validator: EmailValidator.validate,
                 message: (props) => `${props.value} is not valid email address!`,
               },},
+              selectedChat: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Chat', 
+              },
               password: {type: String,   minLength: 8, required: true},
               confirmPassword: {type: String, required: true, minLength: 8,},
               pic: {type: String,  default: "https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png" }

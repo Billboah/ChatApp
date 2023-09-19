@@ -126,7 +126,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
           <SearchResult
             handleFunction={addUsers}
             search={search}
-            chats={null}
+            chats={[]}
             selectLoading={null}
           />
         </div>

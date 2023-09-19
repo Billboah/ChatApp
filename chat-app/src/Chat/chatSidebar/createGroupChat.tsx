@@ -175,7 +175,7 @@ function CreateGroupChat() {
           <SearchResult
             handleFunction={addUsers}
             search={search}
-            chats={null}
+            chats={[]}
             selectLoading={null}
           />
         </div>

@@ -103,6 +103,7 @@ export default function chatSidebar() {
       });
   };
 
+  // search chat
   const filteredChats = chats?.filter(
     (item: { chatName: string; users: any[]; isGroupChat: boolean }) => {
       if (item.isGroupChat === true) {
@@ -158,14 +159,13 @@ export default function chatSidebar() {
             </div>
           ) : (
             <div className="w-full h-fit">
-              {filteredChats &&(
-              filteredChats.map((chat: Chat) => (
-                <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
-              ))
-              )}
+              {filteredChats &&
+                filteredChats.map((chat: Chat) => (
+                  <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
+                ))}
               <div className="w-full text-sm border-1 relative m-5">
                 <div className="border border-gray-400 "></div>
-                <div className="absolute top-[-10px] left-[38%] text-gray-500 bg-gray-300 w-fit px-2 z-10">
+                <div className="absolute top-[-10px] left-[30%] text-gray-500 bg-gray-300 w-fit px-2 z-10">
                   Start a new chat
                 </div>
               </div>

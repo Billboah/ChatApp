@@ -14,8 +14,8 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { io } from 'socket.io-client';
 import { RootState } from '../../state/reducers';
 import { ClipLoading } from '../../config/ChatLoading';
-import { BACKEND_API } from '../../config/chatLogics';
-import { Chat, Message } from '../../types';
+import { BACKEND_API, getSender } from '../../config/chatLogics';
+import { Message } from '../../types';
 
 const socket = io(BACKEND_API);
 
@@ -237,44 +237,45 @@ export default function chatMessages() {
             <div className="h-full w-full flex justify-start items-center ">
               <button
                 title="Back"
-                className="mr-[10px] md:hidden"
+                className="pr-2 md:hidden"
                 onClick={() => (
                   dispatch(setSmallScreen(true)),
                   dispatch(setSelectedChat(null))
                 )}
               >
                 <FaArrowLeft />
+                <p className="sr-only">Back</p>
               </button>
               <button
                 onClick={() => dispatch(setInfo(true))}
                 className="h-full w-full flex justify-start items-center"
               >
-                <img
-                  src={
-                    selectedChat?.isGroupChat === false
-                      ? selectedChat?.users[0]._id === user?._id
-                        ? selectedChat?.users[1].pic
-                        : selectedChat?.users[0].pic
-                      : selectedChat?.pic
-                  }
-                  alt=""
-                  title="Profile details"
-                  className="rounded-full h-[35px] w-[35px] bg-gray-400"
-                />
+                {user && (
+                  <img
+                    src={
+                      selectedChat?.isGroupChat === false
+                        ? getSender(user, selectedChat?.users).pic
+                        : selectedChat?.pic
+                    }
+                    alt=""
+                    title="Profile details"
+                    className="rounded-full h-[35px] w-[35px] bg-gray-400"
+                  />
+                )}
 
-                <div className="w-full min-w-[20px] px-3 flex flex-col items-start ">
-                  <p className="text-lg font-extrabold">
-                    {selectedChat?.isGroupChat === false
-                      ? selectedChat?.users[0]._id === user?._id
-                        ? selectedChat?.users[1].username
-                        : selectedChat?.users[0].username
-                      : selectedChat?.chatName}
-                  </p>
+                <div className="w-[90%] min-w-[20px] px-3 flex flex-col items-start ">
+                  {user && (
+                    <p className="text-lg font-extrabold">
+                      {selectedChat?.isGroupChat === false
+                        ? getSender(user, selectedChat.users).username
+                        : selectedChat?.chatName}
+                    </p>
+                  )}
                   {selectedChat?.isGroupChat === true && isTyping === true ? (
                     <div>{typer} typing...</div>
                   ) : selectedChat?.isGroupChat === true &&
                     isTyping === false ? (
-                    <div className="w-full flex mr-2  pr-2">
+                    <div className="w-full flex">
                       <span
                         className=" truncate text-sm text-gray-500"
                         title={selectedChat?.users
