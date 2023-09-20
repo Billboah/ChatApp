@@ -35,27 +35,23 @@ const io = new socket_io_1.Server(server, {
 });
 io.on('connection', (socket) => {
     console.log('Connected to socket.io');
-    let userId;
+    var userId;
     socket.on("setup", (userData) => {
-        userId = userData === null || userData === void 0 ? void 0 : userData.id;
+        userId = userData === null || userData === void 0 ? void 0 : userData._id;
         socket.join(userData === null || userData === void 0 ? void 0 : userData.id);
         socket.emit("connected");
     });
     socket.on("join chat", (room) => {
         socket.join(room);
-        //console.log( userId+' '+"Joined Room:"+' ' + room );
+        console.log(userId + ' ' + "Joined Room:" + ' ' + room);
     });
     socket.on("new message", (newMessageReceived) => {
         const chat = newMessageReceived.chat;
-        if (!chat.users)
-            return console.log('chat.users not defined');
+        if (!chat.users) {
+            return;
+        }
         chat.users.forEach((user) => {
-            if (user === (newMessageReceived === null || newMessageReceived === void 0 ? void 0 : newMessageReceived.sender._id)) {
-                return;
-            }
-            else {
-                socket.in(user).emit('message received', newMessageReceived);
-            }
+            socket.in(user).emit('message received', newMessageReceived);
         });
     });
     socket.on('typing', (sender, room) => {
