@@ -3,8 +3,9 @@ import { Chat } from '../models/chatModel'
 import { Message } from '../models/messageModel';
 import { User } from '../models/userModels';
 import { IUser } from '../models/userModels';
+import {CustomRequest} from '../config/express'
 
-export const sendMessageController = async (req: Request, res: Response) => {
+export const sendMessageController = async (req: CustomRequest, res: Response) => {
   const { content, chatId }: { content: string, chatId: string } = req.body
 
   if (!content || !chatId) {
@@ -51,7 +52,7 @@ export const sendMessageController = async (req: Request, res: Response) => {
   }
 }
 
-export const getChatMessages = async (req: Request, res: Response) => {
+export const getChatMessages = async (req: CustomRequest, res: Response) => {
   const chatId = req.params.chatId
   const userId = req.user._id
   try {

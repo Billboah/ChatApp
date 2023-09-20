@@ -1,9 +1,10 @@
-import { Request, Response } from 'express';
+import {  Response } from 'express';
 import { Chat, IChat } from '../models/chatModel'
-import { User, IUser } from '../models/userModels';
+import { User } from '../models/userModels';
+import { CustomRequest,  user } from '../config/express';
 
 
-export const createChatController = async (req: Request, res: Response) => {
+export const createChatController = async (req: CustomRequest, res: Response) => {
   try {
     const { userId }: { userId: string } = req.body;
 
@@ -12,8 +13,8 @@ export const createChatController = async (req: Request, res: Response) => {
       return res.sendStatus(400);
     }
 
-    const currentUser: IUser = req.user;
-    const targetUser: IUser | null = await User.findById(userId);
+    const currentUser: user = req.user;
+    const targetUser: user | null = await User.findById(userId);
 
     if (!targetUser) {
       console.log('Target user not found');
@@ -80,7 +81,7 @@ export const createChatController = async (req: Request, res: Response) => {
   }
 }
 
-export const getAllChatController = async (req: Request, res: Response) => {
+export const getAllChatController = async (req: CustomRequest, res: Response) => {
   try {
     const results: IChat[] = await Chat.find({ users: req.user._id })
       .populate('users', '-password')
@@ -100,14 +101,14 @@ export const getAllChatController = async (req: Request, res: Response) => {
   }
 }
 
-export const createGroupChatController = async (req: Request, res: Response) => {
+export const createGroupChatController = async (req: CustomRequest, res: Response) => {
   try {
     if (!req.body.users || !req.body.name) {
       res.status(400);
       throw new Error('Please fill all necessary fields');
     }
 
-    const users: IUser[] = JSON.parse(req.body.users);
+    const users: user[] = JSON.parse(req.body.users);
 
     if (users.length < 2) {
       res.status(400);
@@ -136,7 +137,7 @@ export const createGroupChatController = async (req: Request, res: Response) => 
   }
 }
 
-export const changeGroupNameController = async (req: Request, res: Response) => {
+export const changeGroupNameController = async (req: CustomRequest, res: Response) => {
   try {
     const { chatId, chatName }: { chatId: string; chatName: string } = req.body;
 
@@ -162,7 +163,7 @@ export const changeGroupNameController = async (req: Request, res: Response) => 
   }
 }
 
-export const changeGroupIconController = async (req: Request, res: Response) => {
+export const changeGroupIconController = async (req: CustomRequest, res: Response) => {
   try {
     const { chatId, pic }: { chatId: string, pic: string } = req.body;
 
@@ -188,13 +189,13 @@ export const changeGroupIconController = async (req: Request, res: Response) => 
   }
 }
 
-export const removeMemberController = async (req: Request, res: Response) => {
+export const removeMemberController = async (req: CustomRequest, res: Response) => {
   try {
     const { chatId, userId }: { chatId: string; userId: string } = req.body;
 
     const chat: any = await Chat.findOne({ _id: chatId })
 
-    if (chat.groupAdmin != req.user.id) {
+    if (chat.groupAdmin != req.user._id) {
       res.status(400);
       throw new Error('You are not authorized to perform this function');
     } else {
@@ -219,14 +220,14 @@ export const removeMemberController = async (req: Request, res: Response) => {
   }
 }
 
-export const addMemberController = async (req: Request, res: Response) => {
+export const addMemberController = async (req: CustomRequest, res: Response) => {
   try {
-    const users: IUser[] = JSON.parse(req.body.userIds);
+    const users: user[] = JSON.parse(req.body.userIds);
     const chatId: string = req.body.chatId;
 
     const chat: any = await Chat.findOne({ _id: chatId })
 
-    if (chat.groupAdmin != req.user.id) {
+    if (chat.groupAdmin != req.user._id) {
       throw new Error('You are not authorized to perform this function');
     } else {
 

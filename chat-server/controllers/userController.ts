@@ -1,9 +1,10 @@
-import {  Request, Response } from 'express';
+import {   Response } from 'express';
 import {User} from '../models/userModels'
 import generateToken from '../config/generateToken'
+import { CustomRequest } from '../config/express';
 
 
-export const signupController = async (req: Request, res: Response)=>{
+export const signupController = async (req: CustomRequest, res: Response)=>{
               const {name, username, email, password, pic, confirmPassword } = req.body
 
               try{                
@@ -45,7 +46,7 @@ export const signupController = async (req: Request, res: Response)=>{
             }
 }
 
-export const signInController = async (req: Request, res: Response)=>{
+export const signInController = async (req: CustomRequest, res: Response)=>{
               const {name,  password  } = req.body
      try{       
               if( !password || !name ){
@@ -76,7 +77,7 @@ export const signInController = async (req: Request, res: Response)=>{
             }
 }
 
-export const searchUsersController =  async(req: Request, res: Response)=>{
+export const searchUsersController =  async(req: CustomRequest, res: Response)=>{
               const keyword = req.query.search
            
               try {
@@ -93,7 +94,7 @@ export const searchUsersController =  async(req: Request, res: Response)=>{
               }
 }
 
-export const changeUserName =  async (req: Request, res: Response) => {
+export const changeUserName =  async (req: CustomRequest, res: Response) => {
               try {
                 const  username: string = req.body.username
             const userId = req.user._id
@@ -127,7 +128,7 @@ export const changeUserName =  async (req: Request, res: Response) => {
               }
 }
 
-export const changePicController = async (req: Request, res: Response) => {
+export const changePicController = async (req: CustomRequest,  res: Response) => {
               try {
               const  pic: string = req.body.pic
               const userId = req.user._id
