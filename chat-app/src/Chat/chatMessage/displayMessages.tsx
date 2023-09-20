@@ -32,30 +32,34 @@ const DisplayMessages: React.FC<Props> = ({
   };
 
   return (
-    <div className={`flex flex-col w-full h-fit `} ref={contentRef}>
+    <div className={`flex flex-col w-full h-full `} ref={contentRef}>
       {messages.map((message) => (
         <div
           key={message._id}
           className={` flex ${
             message.sender._id === user?._id ? 'flex-row-reverse' : 'flex-row'
-          } items-end my-2 mx-3`}
+          } items-end py-1 px-3`}
         >
           {selectedChat?.isGroupChat && message.sender._id !== user?._id && (
             <div className="m-0 p-0">
               <img
                 src={message.sender.pic}
                 alt="sender pic"
-                className="h-[20px] w-[20px] rounded-full bg-gray-400"
+                className="h-[20px] w-[20px] rounded-full bg-gray-400 mr-2"
               />
             </div>
           )}
-          <div className="flex justify-end items-center">
+          <div
+            className={`flex items-center w-full  ${
+              message.sender._id === user?._id
+                ? 'justify-end '
+                : 'justify-start '
+            } `}
+          >
             <div
-              className={`w-fit max-w-[88%] ${
-                message.sender._id === user?._id
-                  ? 'bg-blue-200 mr-1'
-                  : 'bg-white ml-1'
-              } rounded px-3 `}
+              className={`w-fit h-fit max-w-[90%] ${
+                message.sender._id === user?._id ? 'bg-blue-200 ' : 'bg-white '
+              } rounded px-1 `}
             >
               {selectedChat?.isGroupChat &&
                 message.sender._id !== user?._id && (
@@ -72,17 +76,17 @@ const DisplayMessages: React.FC<Props> = ({
                 </p>
                 {message.sender._id === user?._id &&
                   (message.delivered === true ? (
-                    <DoneIcon color="disabled" sx={{ fontSize: 15 }} />
+                    <DoneIcon color="disabled" sx={{ fontSize: 13 }} />
                   ) : (
-                    <FaRegClock color="gray" size={12} />
+                    <FaRegClock color="gray" size={11} />
                   ))}
               </div>
             </div>
-            {message.sender._id === user?._id &&
-              messageLoadingError[message._id] && (
-                <FaExclamationCircle color="red" title="Error" />
-              )}
           </div>
+          {message.sender._id === user?._id &&
+            messageLoadingError[message._id] && (
+              <FaExclamationCircle color="red" title="Error" />
+            )}
         </div>
       ))}
     </div>

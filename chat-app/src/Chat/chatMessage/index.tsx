@@ -213,18 +213,13 @@ export default function chatMessages() {
 
   //add message to messages  in socket.io
   useEffect(() => {
-    socket.on('message received', (newMessageReceived: Message) => {
-      console.log(user);
-      console.log('I am tired');
-      console.log(newMessageReceived);
-      // if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
-
-      //   //give notification
-      //   dispatch(updateChats(newMessageReceived));
-      // } else {
-      //   console.log(newMessageReceived);
-      //   setMessages([...messages, newMessageReceived]);
-      // }
+    socket.on('message received', (newMessageReceived) => {
+      if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
+        //give notification
+        dispatch(updateChats(newMessageReceived));
+      } else {
+        setMessages([...messages, newMessageReceived]);
+      }
     });
   });
 

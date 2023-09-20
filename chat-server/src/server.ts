@@ -58,12 +58,16 @@ io.on('connection', (socket) => {
   socket.on("new message", (newMessageReceived) => {
     const chat = newMessageReceived.chat
 
-    if (!chat.users) { 
-       return
-      }
+    if (!chat.users) {
+      return
+    }
 
-    chat.users.forEach((user) => {
+    chat.users.forEach((user: string) => {
+      if (user === newMessageReceived.sender._id) {
+       return
+      } else {
         socket.in(user).emit('message received', newMessageReceived)
+      }
     })
   });
 
