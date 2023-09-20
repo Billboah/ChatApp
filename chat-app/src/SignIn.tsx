@@ -32,11 +32,7 @@ export default function SignIn() {
       .catch(function (error) {
         setLoading(false);
         if (error.response) {
-          if (error.response.status === 400) {
-            setSignInError(error.response.data.error);
-          } else {
-            setSignInError(error.response.data.error);
-          }
+          setSignInError(error.response.data.error);
         } else if (error.request) {
           alert(
             'Cannot reach the server. Please check your internet connection.',

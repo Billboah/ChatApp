@@ -8,7 +8,8 @@ interface IUser extends Document {
   email: string;
   pic: string;
   _id: string;
-  password?: string;
+  password: string;
+  selectedChat: mongoose.Schema.Types.ObjectId;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

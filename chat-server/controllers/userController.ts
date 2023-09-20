@@ -31,6 +31,7 @@ export const signupController = async (req: Request, res: Response)=>{
                                           username: user.username,
                                           email: user.email,
                                           pic: user.pic,
+                                          selectedChat: user.selectedChat,
                                           token: generateToken(user._id),
                             })
                             
@@ -62,6 +63,7 @@ export const signInController = async (req: Request, res: Response)=>{
                                           username: user.username,
                                           email: user.email,
                                           pic: user.pic,
+                                          selectedChat: user.selectedChat,
                                           token: generateToken(user._id),
                             })
                             }else{
@@ -111,11 +113,12 @@ export const changeUserName =  async (req: Request, res: Response) => {
                 }
             
                 res.status(201).json({
-                  id: updatedUser._id,
+                  _id: updatedUser._id,
                   name: updatedUser.name,
                   username: updatedUser.username,
                   email: updatedUser.email,
                   pic: updatedUser.pic,
+                  selectedChat: updatedUser.selectedChat,
                   token: generateToken(updatedUser._id),
                 })
               } catch (error) {
@@ -136,7 +139,7 @@ export const changePicController = async (req: Request, res: Response) => {
                   {
                     new: true,
                   }
-                )
+                )  
             
                 if (!updatedUser) {
                   res.status(400);
@@ -144,11 +147,12 @@ export const changePicController = async (req: Request, res: Response) => {
                 }
             
                 res.status(201).json({
-                  id: updatedUser._id,
+                  _id: updatedUser._id,
                   name: updatedUser.name,
                   username: updatedUser.username,
                   email: updatedUser.email,
                   pic: updatedUser.pic,
+                  selectedChat: updatedUser.selectedChat,
                   token: generateToken(updatedUser._id),
                 })
               } catch (error) {

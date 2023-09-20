@@ -82,6 +82,12 @@ export default function chatMessages() {
   useEffect(() => {
     socket.emit('setup', user);
     socket.on('connected', () => setSocketConnected(true));
+
+    socket.on(
+      'typing',
+      (sender) => (setIsTyping(true), setTyper(sender?.username)),
+    );
+    socket.on('stop typing', () => (setIsTyping(false), setTyper(' ')));
   }, []);
 
   //socket.io while typing
@@ -173,9 +179,7 @@ export default function chatMessages() {
 
   //display messages with api
   const displayMessages = () => {
-    if (!selectedChat) {
-      return;
-    }
+    const chatId = selectedChat ? selectedChat._id : 'chatIsNotSelected';
     const config: AxiosRequestConfig<any> = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
@@ -183,11 +187,11 @@ export default function chatMessages() {
     };
     setLoadingMessages(true);
     axios
-      .get(`${BACKEND_API}/api/message/${selectedChat._id}`, config)
+      .get(`${BACKEND_API}/api/message/${chatId}`, config)
       .then((response) => {
         setMessages(response.data);
         setLoadingMessages(false);
-        socket.emit('join chat', selectedChat._id);
+        socket.emit('join chat', selectedChat && selectedChat._id);
       })
       .catch((error) => {
         setLoadingMessages(false);
@@ -207,22 +211,21 @@ export default function chatMessages() {
     displayMessages();
   }, [selectedChat]);
 
-  //add message to messages and tell when one is typing in socket.io
+  //add message to messages  in socket.io
   useEffect(() => {
     socket.on('message received', (newMessageReceived: Message) => {
-      if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
-        //give notification
-        dispatch(updateChats(newMessageReceived));
-      } else {
-        setMessages([...messages, newMessageReceived]);
-      }
-    });
+      console.log(user);
+      console.log('I am tired');
+      console.log(newMessageReceived);
+      // if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
 
-    socket.on(
-      'typing',
-      (sender) => (setIsTyping(true), setTyper(sender?.username)),
-    );
-    socket.on('stop typing', () => (setIsTyping(false), setTyper(' ')));
+      //   //give notification
+      //   dispatch(updateChats(newMessageReceived));
+      // } else {
+      //   console.log(newMessageReceived);
+      //   setMessages([...messages, newMessageReceived]);
+      // }
+    });
   });
 
   return (

@@ -36,7 +36,7 @@ export const sendMessageController = async (req: Request, res: Response) => {
 
     await Chat.updateMany(
       {
-        _id: { $ne: req.body.chatId },
+        _id:  chatId ,
         'users': { $nin: usersInChat.map((user: IUser) => user._id) },
       },
       {
@@ -55,6 +55,15 @@ export const getChatMessages = async (req: Request, res: Response) => {
   const chatId = req.params.chatId
   const userId = req.user._id
   try {
+    if (chatId === 'chatIsNotSelected'){
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: {selectedChat: null},
+        },
+        { new: true }
+      );
+    }else{
     const message = await Message.find({ chat: chatId })
       .populate("sender", "username pic email")
       .populate("chat")
@@ -62,27 +71,24 @@ export const getChatMessages = async (req: Request, res: Response) => {
     await User.findByIdAndUpdate(
       userId,
       {
-        selectedChat: chatId,
+        $set: {selectedChat: chatId},
       },
       { new: true }
     );
 
-    const chat = await Chat.findById(chatId);
-
-    const userInChat = chat.users.find(user => user.toString() === userId);;
-
-    if (userInChat) {
-
-      await User.findByIdAndUpdate(
-        userId,
+      await Chat.updateMany(
         {
-          unreadMessages: [],
+          _id:  chatId,
+          'users': { $in: [userId] },
         },
-        { new: true }
-      )
-    }
+      {
+        $set: { unreadMessages: [] },
+      },
+      { new: true }
+      );
 
     res.json(message)
+    }
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }
