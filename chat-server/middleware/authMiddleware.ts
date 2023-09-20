@@ -1,13 +1,12 @@
 // middleware/authMiddleware.ts
-import { Request, Response, NextFunction } from 'express';
+import {  Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import {User} from '../models/userModels'
+import { CustomRequest } from '../config/express';
 
-interface userAuthRequest extends Request {
-  user: any
-}
 
-export const authenticate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+
+export const authenticate = async (req: CustomRequest, res: Response, next: NextFunction): Promise<void> => {
   let token 
 
   if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {

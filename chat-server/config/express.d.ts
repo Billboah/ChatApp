@@ -8,7 +8,6 @@ export interface CustomRequest extends Request {
                             pic: string;
                             name: string;
                             email: string;
-                            token: string;
               }
 }
 
@@ -18,7 +17,6 @@ export interface user {
               pic: string;
               name: string;
               email: string;
-              token: string;
 }
 
 export interface message {
