@@ -26,16 +26,14 @@ app.use('/api/message', messageRouter)
 
 const port = process.env.PORT || 5000;
 
-const server = http.createServer(app);
-
-server.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 })
 
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
-    origin: 'https://chatapp-amber-rho.vercel.app',
+    origin: 'http://localhost:3000',
   },
 });
 
