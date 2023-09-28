@@ -15,7 +15,7 @@ import { io } from 'socket.io-client';
 import { RootState } from '../../state/reducers';
 import { ClipLoading } from '../../config/ChatLoading';
 import { BACKEND_API, getSender } from '../../config/chatLogics';
-import { Message } from '../../types';
+import { Message, ModifyMessage } from '../../types';
 
 const socket = io(BACKEND_API);
 
@@ -117,6 +117,7 @@ export default function chatMessages() {
   //send a message
   const sendMessage = (message: any) => {
     setMessages([...messages, message]);
+
     const config: AxiosRequestConfig<any> = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
@@ -142,10 +143,9 @@ export default function chatMessages() {
           updatedMessages[messageIndex] = response.data;
           setMessages(updatedMessages);
         }
-
+        dispatch(updateChats(response.data));
         dispatch(setNewMessage(response.data));
         socket.emit('new message', response.data);
-        dispatch(updateChats(null));
         scrollToBottom;
       })
       .catch((error) => {
@@ -179,7 +179,7 @@ export default function chatMessages() {
 
   //display messages with api
   const displayMessages = () => {
-    const chatId = selectedChat ? selectedChat._id : 'chatIsNotSelected';
+    const chatId = selectedChat?._id;
     const config: AxiosRequestConfig<any> = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
@@ -208,7 +208,11 @@ export default function chatMessages() {
   };
 
   useEffect(() => {
-    displayMessages();
+    if (selectedChat) {
+      displayMessages();
+    } else {
+      return;
+    }
   }, [selectedChat]);
 
   //add message to messages  in socket.io
@@ -319,8 +323,9 @@ export default function chatMessages() {
               </button>
             )}
             {loadingMessages ? (
-              <div className="w-full h-full flex justify-center items-center">
-                <ClipLoading size={80} />
+              <div className="w-full h-full flex justify-center items-start py-10">
+                <ClipLoading size={30} />
+                <p className="ml-2">Loading Messages...</p>
               </div>
             ) : (
               <DisplayMessages

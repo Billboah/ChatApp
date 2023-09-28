@@ -6,6 +6,7 @@ import { setUser } from './state/reducers/auth';
 import { FadeLoading } from './config/ChatLoading';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { BACKEND_API } from './config/chatLogics';
+import { setCurrentUser } from './state/reducers/chat';
 
 export default function SignIn() {
   const [name, setName] = useState('');
@@ -26,6 +27,7 @@ export default function SignIn() {
       })
       .then(function (response) {
         dispatch(setUser(response.data));
+        dispatch(setCurrentUser(response.data));
         navigate('/');
         setLoading(false);
       })
@@ -108,7 +110,7 @@ export default function SignIn() {
           </div>
           <div className="">
             {signInError && (
-              <p className="text-sm text-red-500 before:content-['*'] before:text-red-500">
+              <p className="text-xs text-red-500 before:content-['*'] before:text-red-500">
                 {signInError}
               </p>
             )}

@@ -4,6 +4,17 @@ export interface User {
   pic: string;
   name: string;
   email: string;
+  selectedChat: string;
+  unreadMessages: Message[];
+  token: string;
+}
+
+interface UserInfo {
+  _id: string;
+  name: string;
+  username: string;
+  email: string;
+  pic: string;
   token: string;
 }
 
@@ -16,6 +27,10 @@ export interface Message {
   updatedAt: string;
 }
 
+export interface ModifyMessage extends Message {
+  isContinuous?: boolean;
+}
+
 export interface Chat {
   groupAdmin: User;
   _id: string;
@@ -23,7 +38,6 @@ export interface Chat {
   chatName: string;
   isGroupChat: boolean;
   latestMessage: Message | null;
-  unreadMessages: Message[];
   createdAt: string;
   users: User[];
 }

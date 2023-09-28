@@ -6,6 +6,7 @@ import { setUser } from './state/reducers/auth';
 import { useDispatch } from 'react-redux';
 import { FadeLoading } from './config/ChatLoading';
 import { BACKEND_API } from './config/chatLogics';
+import { setCurrentUser } from './state/reducers/chat';
 
 type PicStateType = string | undefined;
 
@@ -37,6 +38,7 @@ function SignUp() {
       })
       .then(function (response) {
         dispatch(setUser(response.data));
+        dispatch(setCurrentUser(response.data));
         navigate('/');
         setLoading(false);
       })
@@ -177,11 +179,11 @@ function SignUp() {
           </div>
           <div className="w-full">
             {signUpError ? (
-              <div className="text-sm mb-2 text-red-500  before:content-['*'] before:mr-0.5 before:text-red-500">
+              <div className="text-xs mb-2 text-red-500  before:content-['*'] before:mr-0.5 before:text-red-500">
                 {signUpError}
               </div>
             ) : (
-              <div className="text-sm mb-2">
+              <div className="text-xs mb-2">
                 <p>Password must have at least 8 character. </p>
                 <p>
                   Mix letters, symbols, and numbers to create a strong password.

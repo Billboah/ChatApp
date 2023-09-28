@@ -8,6 +8,8 @@ export interface CustomRequest extends Request {
                             pic: string;
                             name: string;
                             email: string;
+                            unreadMessages: any[];
+                            selectedChat: any;
               }
 }
 
@@ -17,6 +19,8 @@ export interface user {
               pic: string;
               name: string;
               email: string;
+              unreadMessages: any[];
+              selectedChat: any;
 }
 
 export interface message {
@@ -27,7 +31,7 @@ export interface message {
               delivered: boolean;
               updatedAt: string;
 }
-            
+
 export interface chat {
               groupAdmin: user;
               _id: string;
@@ -35,9 +39,8 @@ export interface chat {
               chatName: string;
               isGroupChat: boolean;
               latestMessage: message | null;
-              unreadMessages: message[];
               createdAt: string;
               users: user[];
 }
-            
+
 

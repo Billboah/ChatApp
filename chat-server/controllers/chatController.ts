@@ -1,7 +1,7 @@
-import {  Response } from 'express';
+import { Response } from 'express';
 import { Chat, IChat } from '../models/chatModel'
 import { User } from '../models/userModels';
-import { CustomRequest,  user } from '../config/express';
+import { CustomRequest, user } from '../config/express';
 
 
 export const createChatController = async (req: CustomRequest, res: Response) => {
@@ -27,7 +27,6 @@ export const createChatController = async (req: CustomRequest, res: Response) =>
     })
       .populate('users', '-password')
       .populate('latestMessage')
-      .populate('unreadMessages')
       .populate('latestMessage.sender', 'username pic email');
 
     if (isChat.length > 0) {
@@ -50,7 +49,7 @@ export const createChatController = async (req: CustomRequest, res: Response) =>
         isGroupChat: false,
         users: [currentUser._id, targetUser._id],
       };
-      
+
       const createdChat: IChat = await Chat.create(chatData);
 
       const fullChat: IChat | null = await Chat.findById(createdChat._id)
@@ -87,13 +86,25 @@ export const getAllChatController = async (req: CustomRequest, res: Response) =>
       .populate('users', '-password')
       .populate('groupAdmin', '-password')
       .populate('latestMessage')
-      .populate('unreadMessages')
       .sort({ updatedAt: -1 });
 
-    const populatedResults = await User.populate(results, {
-      path: 'latestMessage.sender',
-      select: 'username pic email',
-    });
+      const populatedResults = await User.populate(results, [
+        {
+          path: 'users', 
+          select: '-password', 
+          populate: {
+            path: 'unreadMessages', 
+            populate: {
+              path: 'chat',
+              select: 'chatName isGroupChat', 
+            },
+          },
+        },
+        {
+          path: 'latestMessage.sender', 
+          select: 'username pic email', 
+        },
+      ]);
 
     res.status(200).json(populatedResults);
   } catch (error) {
@@ -128,8 +139,7 @@ export const createGroupChatController = async (req: CustomRequest, res: Respons
     const fullGroupChat = await Chat.findOne({ _id: groupChat._id })
       .populate('users', '-password')
       .populate('groupAdmin', '-password')
-      .populate('unreadMessages')
-      .populate('latestMessage');
+      .populate('latestMessage')
 
     res.status(200).json(fullGroupChat);
   } catch (error) {

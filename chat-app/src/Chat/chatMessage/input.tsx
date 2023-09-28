@@ -28,13 +28,16 @@ const Input: React.FC<Props> = ({
   //send message
   const handleSendMessage = (e: any) => {
     e.preventDefault();
+
+    const currentTime = new Date();
+
     const inputMessage: any = {
       _id: generateClientId(),
       sender: user,
       content: input,
       chat: selectedChat,
       delivered: false,
-      updatedAt: new Date(),
+      updatedAt: currentTime.toISOString(),
     };
 
     if (input.trim() !== '') {

@@ -46,6 +46,14 @@ body {
   }
 }
 
+.background-gradient-left::before{
+  background: linear-gradient(138deg, transparent 0%, transparent 65%, white 50%, white);
+}
+
+.background-gradient-right::before{
+  background: linear-gradient(222deg, transparent 0%, transparent 65%, rgb(191 219 254) 50%, rgb(191 219 254));
+}
+
 
 
 

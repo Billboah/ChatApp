@@ -6,10 +6,13 @@ import { useNavigate } from 'react-router-dom';
 import CreateGroupChat from './chatSidebar/createGroupChat';
 import { setInfo } from '../state/reducers/screen';
 import { RootState } from '../state/reducers';
+import axios, { AxiosRequestConfig } from 'axios';
+import { BACKEND_API } from '../config/chatLogics';
 
 function Chats() {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { selectedChat } = useSelector((state: RootState) => state.chat);
   const { smallScreen } = useSelector((state: RootState) => state.screen);
   const { newGroup } = useSelector((state: RootState) => state.screen);
   const ref = useRef<HTMLDivElement | null>(null);
@@ -21,6 +24,37 @@ function Chats() {
     }
   }, [user]);
 
+  const updateSelectedChat = () => {
+    const config: AxiosRequestConfig<any> = {
+      headers: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    };
+
+    axios
+      .put(
+        `${BACKEND_API}/api/user/updateselectedchat`,
+        { selectedChat },
+        config,
+      )
+      .catch((error) => {
+        if (error.response) {
+          console.error('Server error:', error.response.data.error);
+        } else if (error.request) {
+          alert(
+            'Cannot reach the server. Please check your internet connection.',
+          );
+        } else {
+          console.error('Error:', error.message);
+        }
+      });
+  };
+
+  useEffect(() => {
+    updateSelectedChat();
+  }, [selectedChat]);
+
+  // handle click outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {

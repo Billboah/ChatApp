@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import {  Response } from 'express';
 import { Chat } from '../models/chatModel'
 import { Message } from '../models/messageModel';
 import { User } from '../models/userModels';
@@ -29,22 +29,26 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
         select: 'username pic email',
       });
 
-    await Chat.findByIdAndUpdate(req.body.chatId, {
+    await Chat.findByIdAndUpdate(chatId, {
       latestMessage: message,
     })
 
-    const usersInChat = await User.find({ selectedChat: chatId });
+    const chat = await Chat.findOne({ _id: chatId });
 
-    await Chat.updateMany(
-      {
-        _id:  chatId ,
-        'users': { $nin: usersInChat.map((user: IUser) => user._id) },
-      },
-      {
-        $push: { unreadMessages: message },
-      },
-      { new: true }
-    );
+const usersInChat = chat.users;
+
+User && await User.updateMany(
+  { 
+    _id: { $in: usersInChat },
+    selectedChat: { $ne: chatId },
+  },
+  {
+    $push: { 'unreadMessages': message }, 
+  },
+  {
+    new: true,
+  }
+);
 
     res.json(message)
   } catch (error) {
@@ -54,42 +58,37 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
 
 export const getChatMessages = async (req: CustomRequest, res: Response) => {
   const chatId = req.params.chatId
-  const userId = req.user._id
+  const userId = req.user?._id
+
+  if (!chatId){
+    return
+  }
+  
   try {
-    if (chatId === 'chatIsNotSelected'){
-      await User.findByIdAndUpdate(
-        userId,
-        {
-          $set: {selectedChat: null},
-        },
-        { new: true }
-      );
-    }else{
+    const messageIdsToRemove = await Message.find({ chat: chatId }).distinct('_id');
+
+    if (userId){
     const message = await Message.find({ chat: chatId })
       .populate("sender", "username pic email")
       .populate("chat")
 
-    await User.findByIdAndUpdate(
-      userId,
-      {
-        $set: {selectedChat: chatId},
-      },
-      { new: true }
-    );
-
-      await Chat.updateMany(
+      await User.findByIdAndUpdate(
+        userId,
         {
-          _id:  chatId,
-          'users': { $in: [userId] },
+          $pull: {
+            unreadMessages: {
+              $in: messageIdsToRemove
+            }
+          },
         },
-      {
-        $set: { unreadMessages: [] },
-      },
-      { new: true }
-      );
+        { new: true }
+      );      
 
     res.json(message)
-    }
+    
+  }else{
+    res.status(400).json({error: 'User does not exist'})
+  }
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }

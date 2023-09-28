@@ -2,15 +2,16 @@ import express from "express";
 import cors from "cors";
 import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
-import http from 'http';
-import connectDB from '../config/db'
-import userRouter from '../routes/userRoutes'
-import chatRouter from '../routes/chatRoutes'
-import messageRouter from '../routes/messageRoute'
+import connectDB from '../config/db';
+import userRouter from '../routes/userRoutes';
+import chatRouter from '../routes/chatRoutes';
+import messageRouter from '../routes/messageRoute';
 import { Server } from "socket.io";
+import { User } from "../models/userModels";
 
 
 dotenv.config();
+
 
 connectDB()
 const app = express();
@@ -33,7 +34,7 @@ const server = app.listen(port, () => {
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
-    origin: 'http://localhost:3000',
+    origin: 'https://chatapp-amber-rho.vercel.app',
   },
 });
 
@@ -41,6 +42,7 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log('Connected to socket.io');
   var userId: string
+
 
   socket.on("setup", (userData) => {
     userId = userData?._id
@@ -60,13 +62,16 @@ io.on('connection', (socket) => {
       return
     }
 
-    chat.users.forEach((user: string) => {
-      if (user === newMessageReceived.sender._id) {
-       return
-      } else {
-        socket.in(user).emit('message received', newMessageReceived)
-      }
-    })
+    const recipients = chat.users.filter((user) => user !== newMessageReceived.sender._id);
+
+    recipients.forEach((user) => {
+      socket.in(user).emit('message received', newMessageReceived, (error) => {
+        if (error) {
+          console.error(`Error sending message to room ${user}:`, error);
+        }
+      });
+    });
+    
   });
 
   socket.on('typing', (sender, room) => {
@@ -78,7 +83,30 @@ io.on('connection', (socket) => {
     socket.in(room).emit('stop typing');
   });
 
-});
+  // socket.off('setup', (userData)=>{
+  //   console.log('USER DISCONNECTED')
+  //   Socket.leave(userData._id)
+  // })
+
+  socket.on('disconnect', async () => {
+    console.log('A user disconnected');
+    try {
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          $set: {selectedChat: null},
+        },
+        { new: true }
+      );
+    }catch(error){
+      console.log({ error: error.message });
+    }
+  });
+
+})
+
+
+
 
 
 module.exports = app;

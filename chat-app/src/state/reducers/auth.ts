@@ -1,17 +1,9 @@
 // authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { User } from '../../types';
 
 interface AuthState {
-  user: UserInfo | null;
-}
-
-interface UserInfo {
-  _id: string;
-  name: string;
-  username: string;
-  email: string;
-  pic: string;
-  token: string;
+  user: User | null;
 }
 
 const storedUser = localStorage.getItem('user');
@@ -31,7 +23,7 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    setUser: (state, action: PayloadAction<UserInfo | null>) => {
+    setUser: (state, action: PayloadAction<User | null>) => {
       state.user = action.payload;
 
       if (action.payload) {

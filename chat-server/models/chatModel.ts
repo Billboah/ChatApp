@@ -1,13 +1,11 @@
 import mongoose from 'mongoose'
 import { IUser } from './userModels';
-import { IMessage } from './messageModel';
 
 interface IChat extends mongoose.Document {
               chatName: string;
               isGroupChat: boolean;
               users: IUser['_id'][];
               latestMessage: mongoose.Types.ObjectId;
-              unreadMessages: IMessage[]
               groupAdmin: mongoose.Types.ObjectId;
 }
  
@@ -25,12 +23,6 @@ const chatModel = new  mongoose.Schema({
                             type: mongoose.Schema.Types.ObjectId,
                             ref: "Message",
               },
-              unreadMessages: 
-                 [{
-                  type: mongoose.Schema.Types.ObjectId, 
-                  ref: "Message", 
-                  default: [],
-                }, ],
               groupAdmin: {
                             type: mongoose.Schema.Types.ObjectId,
                             ref: "User",

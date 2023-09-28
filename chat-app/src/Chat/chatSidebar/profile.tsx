@@ -10,7 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser, setUser } from '../../state/reducers/auth';
 import { setProfile } from '../../state/reducers/screen';
 import axios, { AxiosRequestConfig } from 'axios';
-import { setChatChange } from '../../state/reducers/chat';
+import { setChatChange, setSelectedChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
@@ -29,6 +29,7 @@ function Profile() {
   const handleLogout = () => {
     dispatch(logoutUser());
     dispatch(setProfile(null));
+    dispatch(setSelectedChat(null));
   };
 
   //change profile pic
@@ -61,11 +62,7 @@ function Profile() {
         .catch((error) => {
           setPicLoading(false);
           if (error.response) {
-            if (error.response.status === 400) {
-              setError(error.response.data.error);
-            } else {
-              console.error('Server error:', error.response.data.error);
-            }
+            setError(error.response.data.error);
           } else if (error.request) {
             alert(
               'Cannot reach the server. Please check your internet connection.',
@@ -118,14 +115,14 @@ function Profile() {
   };
 
   return (
-    <div>
+    <div className="h-full w-full">
       <nav className="flex items-end bg-gray-200 h-[70px] w-full px-[20px] py-[10px]">
         <button className="" onClick={() => dispatch(setProfile(false))}>
           <FaArrowLeft size={20} />
         </button>
         <h2 className="text-xl font-bold ml-[20px]">Profile</h2>
       </nav>
-      <div className="flex flex-col  h-full py-[50px] px-[30px]">
+      <div className="flex flex-col  h-full pt-[50px] pb-[100px] px-[30px] overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
         <div className="flex flex-col justify-center w-full mb-[30px] relative">
           <div className="w-full h-full flex justify-center items-center">
             <div

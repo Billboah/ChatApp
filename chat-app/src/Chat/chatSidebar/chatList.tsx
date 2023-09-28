@@ -3,16 +3,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setSelectedChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { setSmallScreen } from '../../state/reducers/screen';
-import { Chat } from '../../types';
+import { Chat, Message } from '../../types';
 import { format, isToday, isYesterday } from 'date-fns';
-import { getSender } from '../../config/chatLogics';
+import { getSender, getUnreadMessages } from '../../config/chatLogics';
 
-type Props = {
+type ChatProps = {
   chat: Chat;
   setSearch: Dispatch<SetStateAction<string>>;
 };
 
-const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
+const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch();
@@ -22,7 +22,7 @@ const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
     dispatch(setSmallScreen(false));
   };
 
-  const timeFormat = (message: any) => {
+  const timeFormat = (message: Message) => {
     const mongoDBUpdatedAt = message?.updatedAt;
     const updatedAtDate = new Date(mongoDBUpdatedAt);
     return format(updatedAtDate, 'HH:mm');
@@ -93,13 +93,19 @@ const ChatList: React.FC<Props> = ({ chat, setSearch }) => {
         )}
         <div className="h-full w-fit flex flex-col items-center justify-between pb-2">
           {chat.latestMessage && (
-            <p className="text-xs text-gray-500">
+            <p
+              className={`text-xs ${
+                getUnreadMessages(chat, user)?.length > 0
+                  ? 'text-blue-500'
+                  : 'text-gray-500'
+              } `}
+            >
               {timeFormat(chat.latestMessage)}
             </p>
           )}
-          {chat?.unreadMessages.length >= 1 && (
+          {getUnreadMessages(chat, user)?.length > 0 && (
             <div className="bg-blue-500 rounded-full px-1 text-white text-xs ">
-              {chat.unreadMessages.length}
+              {getUnreadMessages(chat, user)?.length}
             </div>
           )}
         </div>
