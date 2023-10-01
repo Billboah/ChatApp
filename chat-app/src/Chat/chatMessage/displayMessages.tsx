@@ -1,25 +1,27 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../state/reducers';
-import { FaExclamationCircle, FaRegClock } from 'react-icons/fa';
+import { FaExclamationCircle, FaRegClock, FaUser } from 'react-icons/fa';
 import DoneIcon from '@mui/icons-material/Done';
 import { format, isToday, isYesterday, isSameYear, isSameWeek } from 'date-fns';
-import { Message, ModifyMessage } from '../../types';
+import { Message } from '../../types';
 
 type Props = {
   messageLoadingError: { [key: string]: boolean };
   messages: Message[];
   contentRef: React.MutableRefObject<HTMLDivElement | null>;
+  reSendMessage: Message[];
+  sendMessage: (message: Message) => void;
+  setLoadingMessagesError: any;
 };
-
-interface SenderGroup {
-  [senderId: string]: Message[];
-}
 
 const DisplayMessages: React.FC<Props> = ({
   messageLoadingError,
   messages,
   contentRef,
+  reSendMessage,
+  sendMessage,
+  setLoadingMessagesError,
 }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
@@ -99,6 +101,7 @@ const DisplayMessages: React.FC<Props> = ({
     }
   };
 
+  //Resend message
   return (
     <div className={`flex flex-col w-full h-full `} ref={contentRef}>
       {Object.entries(groupedMessages).map(([date]) => (
@@ -114,74 +117,88 @@ const DisplayMessages: React.FC<Props> = ({
                 (message: any, index: any, messagesArray: any) => (
                   <div
                     key={message._id}
-                    className={` flex ${
-                      message.sender._id === user?._id
-                        ? 'flex-row-reverse'
-                        : 'flex-row'
-                    } items-end py-[2px] px-5`}
+                    className="w-full  flex justify-end items-center py-[2px] px-5"
                   >
-                    {selectedChat?.isGroupChat &&
-                      message.sender._id !== user?._id && (
-                        <div
-                          className={`mb-1 p-0 ${
-                            index === messagesArray.length - 1
-                              ? 'visible'
-                              : 'invisible'
-                          } `}
-                        >
-                          <img
-                            src={message.sender.pic}
-                            alt="sender pic"
-                            className="h-[20px] w-[20px] rounded-full bg-gray-400 mr-2"
-                          />
-                        </div>
-                      )}
                     <div
-                      className={`flex items-center w-full p-0 m-0 relative  ${
+                      className={`flex-1 flex ${
                         message.sender._id === user?._id
-                          ? 'justify-end '
-                          : 'justify-start '
-                      } `}
+                          ? 'flex-row-reverse'
+                          : 'flex-row'
+                      } items-end `}
                     >
+                      {selectedChat?.isGroupChat &&
+                        message.sender._id !== user?._id && (
+                          <div
+                            className={`mb-1 p-0 ${
+                              index === messagesArray.length - 1
+                                ? 'visible'
+                                : 'invisible'
+                            } `}
+                          >
+                            <div className="flex justify-center items-center h-[20px] w-[20px] rounded-full bg-gray-400 mr-2">
+                              {message.sender.pic ? (
+                                <img
+                                  src={message.sender.pic}
+                                  alt="sender pic"
+                                  className="h-full w-full rounded-full "
+                                />
+                              ) : (
+                                <FaUser size={15} color="white" />
+                              )}
+                            </div>
+                          </div>
+                        )}
                       <div
-                        className={`w-fit h-fit max-w-[90%] ${
+                        className={`flex items-center w-full p-0 m-0 relative  ${
                           message.sender._id === user?._id
-                            ? 'bg-blue-200 before:right-[-15px] background-gradient-right'
-                            : 'bg-white before:left-[-15px] background-gradient-left'
-                        } ${
-                          index === messagesArray.length - 1 &&
-                          "before:content-[' '] before:w-6 before:h-6 before:absolute before:bottom-0 before:rounded-full "
-                        } rounded-lg px-2 py-1 `}
+                            ? 'justify-end '
+                            : 'justify-start '
+                        } `}
                       >
-                        {selectedChat?.isGroupChat &&
-                          message.sender._id !== user?._id &&
-                          index === 0 && (
-                            <p
-                              className={`font-bold w-full text-red-400 text-xs truncate `}
-                            >
-                              {message.sender.username}
+                        <div
+                          className={`w-fit h-fit max-w-[90%] ${
+                            message.sender._id === user?._id
+                              ? 'bg-blue-200 before:right-[-15px] background-gradient-right'
+                              : 'bg-white before:left-[-15px] background-gradient-left'
+                          } ${
+                            index === messagesArray.length - 1 &&
+                            "before:content-[' '] before:w-6 before:h-6 before:absolute before:bottom-0 before:rounded-full "
+                          } rounded-lg px-2 py-1 `}
+                        >
+                          {selectedChat?.isGroupChat &&
+                            message.sender._id !== user?._id &&
+                            index === 0 && (
+                              <p
+                                className={`font-bold w-full text-red-400 text-xs truncate `}
+                              >
+                                {message.sender.username}
+                              </p>
+                            )}
+                          <p>{message.content}</p>
+                          <div className="w-full flex justify-end items-center mt-[-3px] mr-[5px]">
+                            <p className="text-[10px] text-gray-500 mr-1">
+                              {timeFormat(message)}
                             </p>
-                          )}
-                        <p>{message.content}</p>
-                        <div className="w-full flex justify-end items-center ">
-                          <p className="text-xs text-gray-500 mr-1">
-                            {timeFormat(message)}
-                          </p>
-                          {message.sender._id === user?._id &&
-                            (message.delivered === true ? (
-                              <DoneIcon
-                                color="disabled"
-                                sx={{ fontSize: 13 }}
-                              />
-                            ) : (
-                              <FaRegClock color="gray" size={11} />
-                            ))}
+                            {message.sender._id === user?._id &&
+                              (message.delivered === true ? (
+                                <DoneIcon
+                                  color="disabled"
+                                  sx={{ fontSize: 11 }}
+                                />
+                              ) : (
+                                <FaRegClock color="gray" size={9} />
+                              ))}
+                          </div>
                         </div>
                       </div>
                     </div>
                     {message.sender._id === user?._id &&
                       messageLoadingError[message._id] && (
-                        <FaExclamationCircle color="red" title="Error" />
+                        <FaExclamationCircle
+                          color="red"
+                          size={15}
+                          className="pl-1"
+                        />
                       )}
                   </div>
                 ),

@@ -34,7 +34,7 @@ const server = app.listen(port, () => {
 const io = new Server(server, {
   pingTimeout: 60000,
   cors: {
-    origin: 'https://chatapp-amber-rho.vercel.app',
+    origin: 'http://localhost:3000',
   },
 });
 
@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
       return
     }
 
-    const recipients = chat.users.filter((user) => user !== newMessageReceived.sender._id);
+    const recipients = chat.users.filter((user) => user._id !== newMessageReceived.sender._id);
 
     recipients.forEach((user) => {
       socket.in(user).emit('message received', newMessageReceived, (error) => {
@@ -89,7 +89,6 @@ io.on('connection', (socket) => {
   // })
 
   socket.on('disconnect', async () => {
-    console.log('A user disconnected');
     try {
       await User.findByIdAndUpdate(
         userId,

@@ -25,15 +25,16 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
   const [error, setError] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
-  const [chatList, setChatList] = useState<User[]>([]);
+  const [userList, setUserList] = useState<User[]>([]);
   const [addLoading, setAddLoading] = useState(false);
   const dispatch = useDispatch();
 
   //selecting or adding users
   const addUsers = (user: User) =>
-    chatList?.some((obj) => obj._id === user._id)
-      ? setChatList([...chatList])
-      : setChatList([...chatList, user]);
+    userList?.some((obj) => obj._id === user._id) ||
+    selectedChat?.users.some((u) => u._id === user._id)
+      ? setUserList([...userList])
+      : setUserList([...userList, user]);
 
   //add users
   const handleAddUsers = () => {
@@ -44,7 +45,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
       },
     };
 
-    const userIds = JSON.stringify(chatList.map((user) => user._id));
+    const userIds = JSON.stringify(userList.map((user) => user._id));
 
     axios
       .put(
@@ -93,20 +94,25 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
     <div className="flex justify-center items-center absolute top-0 left-0 h-full w-full bg-black bg-opacity-30 z-30">
       <div
         ref={ref}
-        className="flex flex-col items-center h-fit w-full  max-h-[550px] max-w-[400px] px-[20px] py-[40px] bg-gray-200 relative rounded-[10px]"
+        className="flex flex-col items-center h-fit w-full  max-h-[550px] max-w-[400px]  py-[40px] bg-gray-200 relative rounded-[10px]"
       >
-        <h1 className="text-xl font-bold">{selectedChat?.chatName}</h1>
-        <p className="text-gl font-semibold mb-[20px]">Add participants</p>
-
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Add users eg. Bill, Mike"
-          className="outline-none w-full px-[15px] py-[5px] my-[10px] rounded-sm"
-        />
+        <h1 className="text-xl font-bold px-[20px]">
+          {selectedChat?.chatName}
+        </h1>
+        <p className="text-gl font-semibold mb-[20px] px-[20px]">
+          Add participants
+        </p>
+        <div className="w-full px-[20px]">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Add users eg. Bill, Mike"
+            className="outline-none w-full px-[15px] py-[5px] my-[10px] rounded-sm"
+          />
+        </div>
         <div className="flex flex-wrap w-full py-[5px] border border-1 border-b-gray-400">
-          {chatList.map((user) => (
+          {userList.map((user) => (
             <div
               key={user?._id}
               className="flex justify-between items-center bg-gray-400 w-fit max-w-[120px] rounded-xl mx-1 my-1 px-[7px]"
@@ -114,7 +120,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
               <p className="truncate mr-1">{user.username}</p>
               <button
                 onClick={() =>
-                  setChatList(chatList?.filter((obj) => obj._id !== user._id))
+                  setUserList(userList?.filter((obj) => obj._id !== user._id))
                 }
               >
                 <FaTimes size={15} />
@@ -138,7 +144,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
           <FaTimes size={20} />
         </button>
         <button
-          className="w-[200px] absolute bottom-0 right-0 font-bold bg-gray-400 active:bg-gray-500 rounded-3xl m-2 px-3 py-1"
+          className="w-[200px] absolute bottom-0 right-0 font-bold bg-gray-300 active:bg-gray-500 rounded-3xl m-2 px-3 border border-gray-500"
           onClick={handleAddUsers}
           disabled={addLoading}
         >

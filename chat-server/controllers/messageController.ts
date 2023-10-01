@@ -1,9 +1,8 @@
-import {  Response } from 'express';
+import { Response } from 'express';
 import { Chat } from '../models/chatModel'
 import { Message } from '../models/messageModel';
 import { User } from '../models/userModels';
-import { IUser } from '../models/userModels';
-import {CustomRequest} from '../config/express'
+import { CustomRequest } from '../config/express'
 
 export const sendMessageController = async (req: CustomRequest, res: Response) => {
   const { content, chatId }: { content: string, chatId: string } = req.body
@@ -13,21 +12,22 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
     return res.sendStatus(400)
   }
 
-  try {
-    const newMessage = await Message.create({
-      sender: req.user._id,
-      content: content,
-      chat: chatId,
-      delivered: true,
-    });
+  const newMessage = {
+    sender: req.user._id,
+    content: content,
+    chat: chatId,
+    delivered: true,
+  };
 
-    const message = await Message.findById(newMessage._id)
-      .populate('sender', 'username pic email')
-      .populate('chat')
-      .populate({
-        path: 'chat.users',
-        select: 'username pic email',
-      });
+  try {
+    let message = await Message.create(newMessage)
+
+    await message.populate('sender', 'username pic email');
+    await message.populate('chat');
+    await User.populate(message.chat, {
+      path: 'users',
+      select: 'username pic email',
+    });
 
     await Chat.findByIdAndUpdate(chatId, {
       latestMessage: message,
@@ -35,20 +35,20 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
 
     const chat = await Chat.findOne({ _id: chatId });
 
-const usersInChat = chat.users;
+    const usersInChat = chat.users;
 
-User && await User.updateMany(
-  { 
-    _id: { $in: usersInChat },
-    selectedChat: { $ne: chatId },
-  },
-  {
-    $push: { 'unreadMessages': message }, 
-  },
-  {
-    new: true,
-  }
-);
+    User && await User.updateMany(
+      {
+        _id: { $in: usersInChat },
+        selectedChat: { $ne: chatId },
+      },
+      {
+        $push: { 'unreadMessages': message },
+      },
+      {
+        new: true,
+      }
+    );
 
     res.json(message)
   } catch (error) {
@@ -60,17 +60,17 @@ export const getChatMessages = async (req: CustomRequest, res: Response) => {
   const chatId = req.params.chatId
   const userId = req.user?._id
 
-  if (!chatId){
+  if (!chatId) {
     return
   }
-  
+
   try {
     const messageIdsToRemove = await Message.find({ chat: chatId }).distinct('_id');
 
-    if (userId){
-    const message = await Message.find({ chat: chatId })
-      .populate("sender", "username pic email")
-      .populate("chat")
+    if (userId) {
+      const message = await Message.find({ chat: chatId })
+        .populate("sender", "username pic email")
+        .populate("chat")
 
       await User.findByIdAndUpdate(
         userId,
@@ -82,13 +82,13 @@ export const getChatMessages = async (req: CustomRequest, res: Response) => {
           },
         },
         { new: true }
-      );      
+      );
 
-    res.json(message)
-    
-  }else{
-    res.status(400).json({error: 'User does not exist'})
-  }
+      res.json(message)
+
+    } else {
+      res.status(400).json({ error: 'User does not exist' })
+    }
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }

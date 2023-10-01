@@ -9,9 +9,7 @@ interface IUser extends Document {
   email: string;
   pic: string;
   _id: string;
-
   unreadMessages: mongoose.Schema.Types.ObjectId[]
-
   password: string;
   selectedChat: mongoose.Schema.Types.ObjectId;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -31,8 +29,6 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Chat',
   },
-
-
   unreadMessages: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -43,7 +39,7 @@ const UserSchema = new mongoose.Schema({
 
   password: { type: String, minLength: 8, required: true },
   confirmPassword: { type: String, required: true, minLength: 8, },
-  pic: { type: String, default: "https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png" }
+  pic: { type: String }
 }, {
   timestamps: true
 })

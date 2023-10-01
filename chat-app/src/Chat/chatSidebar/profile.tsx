@@ -5,6 +5,7 @@ import {
   FaCheck,
   FaPen,
   FaSignOutAlt,
+  FaUser,
 } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser, setUser } from '../../state/reducers/auth';
@@ -161,12 +162,16 @@ function Profile() {
                   disabled={picLoading}
                 />
 
-                <div className="flex justify-center items-center h-full w-full rounded-full border border-gray-500  bg-gray-400 cursor-pointer">
-                  <img
-                    src={user?.pic}
-                    alt="group icon"
-                    className="rounded-full h-[180px] w-[180px]"
-                  />
+                <div className="flex justify-center items-center h-[180px] w-[180px] rounded-full border border-gray-500  bg-gray-400 cursor-pointer">
+                  {user?.pic ? (
+                    <img
+                      src={user?.pic}
+                      alt="user icon"
+                      className="rounded-full h-full w-full"
+                    />
+                  ) : (
+                    <FaUser size={100} color="white" />
+                  )}
                 </div>
               </div>
             </div>
@@ -192,7 +197,7 @@ function Profile() {
             {nameEdit ? (
               <button
                 onClick={handleChangeName}
-                title="save"
+                title="save "
                 disabled={nameLoading}
               >
                 {nameLoading ? (
@@ -207,13 +212,22 @@ function Profile() {
               <button
                 className="mb-2"
                 onClick={() => setNameEdit(true)}
-                title="Edit name"
+                title="Edit user name"
               >
-                <FaPen color="gray" size={15} />
+                <FaPen color="gray" size={13} />
               </button>
             )}
           </div>
-          <p className="font-bold mb-[30px]">{user?.email}</p>
+          <div className="mb-[30px]">
+            <p className="">
+              <span className="font-bold ">Email: </span>
+              <span>{user?.email}</span>
+            </p>
+            <p className=" ">
+              <span className="font-bold ">Name: </span>
+              <span>{user?.name}</span>
+            </p>
+          </div>
         </div>
         <div className="w-full">
           <button

@@ -6,6 +6,7 @@ import { setSmallScreen } from '../../state/reducers/screen';
 import { Chat, Message } from '../../types';
 import { format, isToday, isYesterday } from 'date-fns';
 import { getSender, getUnreadMessages } from '../../config/chatLogics';
+import { FaUser, FaUserFriends } from 'react-icons/fa';
 
 type ChatProps = {
   chat: Chat;
@@ -41,11 +42,17 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
       <div className="w-full h-full flex justify-between items-center px-[20px] py-[10px]">
         {chat.isGroupChat ? (
           <div className="w-[90%] flex items-center ">
-            <img
-              src={chat?.pic}
-              alt="group profile image"
-              className="w-[30px] h-[30px] rounded-full bg-gray-400"
-            />
+            <div className="flex justify-center items-center w-[30px] h-[30px] rounded-full bg-gray-400">
+              {chat.pic ? (
+                <img
+                  src={chat?.pic}
+                  alt="group profile image"
+                  className="w-full h-full rounded-full "
+                />
+              ) : (
+                <FaUserFriends color="white" size={20} />
+              )}
+            </div>
             <div className="flex flex-col items-start w-full ml-[10px]">
               <p className="truncate text-left" title={chat.chatName}>
                 {chat.chatName}
@@ -70,11 +77,17 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
         ) : (
           <div className="w-[90%] flex items-center ">
             {user && (
-              <img
-                src={getSender(user, chat?.users).pic}
-                alt="sender profile  image"
-                className="w-[30px] h-[30px] rounded-full bg-gray-400"
-              />
+              <div className="flex justify-center items-center w-[30px] h-[30px] rounded-full bg-gray-400">
+                {getSender(user, chat?.users).pic ? (
+                  <img
+                    src={getSender(user, chat?.users).pic}
+                    alt="sender profile  image"
+                    className="w-full h-full rounded-full "
+                  />
+                ) : (
+                  <FaUser size={20} color="white" />
+                )}
+              </div>
             )}
             <div className="flex flex-col items-start w-full pl-[10px]">
               <p className="truncate text-left">

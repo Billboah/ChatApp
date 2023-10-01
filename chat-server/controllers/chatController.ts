@@ -88,23 +88,23 @@ export const getAllChatController = async (req: CustomRequest, res: Response) =>
       .populate('latestMessage')
       .sort({ updatedAt: -1 });
 
-      const populatedResults = await User.populate(results, [
-        {
-          path: 'users', 
-          select: '-password', 
+    const populatedResults = await User.populate(results, [
+      {
+        path: 'users',
+        select: '-password',
+        populate: {
+          path: 'unreadMessages',
           populate: {
-            path: 'unreadMessages', 
-            populate: {
-              path: 'chat',
-              select: 'chatName isGroupChat', 
-            },
+            path: 'chat',
+            select: 'chatName isGroupChat',
           },
         },
-        {
-          path: 'latestMessage.sender', 
-          select: 'username pic email', 
-        },
-      ]);
+      },
+      {
+        path: 'latestMessage.sender',
+        select: 'username pic email',
+      },
+    ]);
 
     res.status(200).json(populatedResults);
   } catch (error) {
@@ -205,10 +205,7 @@ export const removeMemberController = async (req: CustomRequest, res: Response) 
 
     const chat: any = await Chat.findOne({ _id: chatId })
 
-    if (chat.groupAdmin != req.user._id) {
-      res.status(400);
-      throw new Error('You are not authorized to perform this function');
-    } else {
+    if (chat.groupAdmin.toString() === req.user._id.toString()) {
       const removedChat = await Chat.findByIdAndUpdate(
         chatId,
         {
@@ -224,7 +221,11 @@ export const removeMemberController = async (req: CustomRequest, res: Response) 
       }
 
       res.json(removedChat);
+    } else {
+      res.status(400);
+      throw new Error('You are not authorized to perform this function');
     }
+
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }
@@ -237,10 +238,7 @@ export const addMemberController = async (req: CustomRequest, res: Response) => 
 
     const chat: any = await Chat.findOne({ _id: chatId })
 
-    if (chat.groupAdmin != req.user._id) {
-      throw new Error('You are not authorized to perform this function');
-    } else {
-
+    if (chat.groupAdmin.toString() === req.user._id.toString()) {
       const addedChat = await Chat.findByIdAndUpdate(
         chatId,
         {
@@ -256,7 +254,9 @@ export const addMemberController = async (req: CustomRequest, res: Response) => 
       }
 
       res.json(addedChat);
-    }
+    } else {
+      throw new Error('You are not authorized to perform this function');
+     }
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }

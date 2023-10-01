@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FaPlus, FaSearch } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaUser } from 'react-icons/fa';
 import axios, { AxiosRequestConfig } from 'axios';
 import {
   setChatChange,
@@ -18,6 +18,7 @@ import { BACKEND_API } from '../../config/chatLogics';
 import SearchResult from '../../components/serchResult';
 import ChatList from './chatList';
 import { Chat, User } from '../../types';
+import { SkeletonLoading } from '../../config/ChatLoading';
 
 export default function chatSidebar() {
   const dispatch = useDispatch();
@@ -29,9 +30,11 @@ export default function chatSidebar() {
     [key: string]: boolean;
   }>({});
   const [search, setSearch] = useState('');
+  const [chatsLoading, setChatsLoading] = useState(false);
 
   //display chats
   const displayChats = () => {
+    setChatsLoading(true);
     const config: AxiosRequestConfig<any> = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
@@ -43,15 +46,19 @@ export default function chatSidebar() {
       .then((response) => {
         dispatch(setChats(response.data));
         dispatch(setChatChange(false));
+        setChatsLoading(false);
       })
       .catch((error) => {
         if (error.response) {
+          setChatsLoading(false);
           console.error('Server error:', error.response.data.error);
         } else if (error.request) {
+          setChatsLoading(false);
           alert(
-            'Cannot reach the server. Please check your internet connection.',
+            'Cannot reach the server. Please check your internet connection and refresh the page.',
           );
         } else {
+          setChatsLoading(false);
           console.error('Error:', error.message);
         }
       });
@@ -120,13 +127,20 @@ export default function chatSidebar() {
     <div className="bg-gray-300 h-full w-full relative border border-r-gray-400 border-1">
       <div className="w-full h-full flex flex-col">
         <nav className="flex justify-between items-center bg-gray-200 w-full h-[50px] p-4">
-          <button onClick={() => dispatch(setProfile(true))}>
-            <img
-              src={user?.pic}
-              alt=""
-              className="bg-gray-400 rounded-full h-[35px] w-[35px]"
-              title="Profile"
-            />
+          <button
+            onClick={() => dispatch(setProfile(true))}
+            className="flex justify-center items-center bg-gray-400 rounded-full h-[35px] w-[35px]"
+          >
+            {user?.pic ? (
+              <img
+                src={user?.pic}
+                alt=""
+                className=" h-full w-full"
+                title="Profile"
+              />
+            ) : (
+              <FaUser color="white" size={25} />
+            )}
           </button>
           <button
             onClick={() => dispatch(setNewGroup(true))}
@@ -151,12 +165,22 @@ export default function chatSidebar() {
 
         <div className="w-full h-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
           {!search ? (
-            <div className="w-full h-full">
-              {chats !== null &&
-                chats.map((chat: Chat) => (
-                  <ChatList key={chat._id} chat={chat} setSearch={setSearch} />
-                ))}
-            </div>
+            <>
+              {chatsLoading ? (
+                <SkeletonLoading />
+              ) : (
+                <div className="w-full h-full">
+                  {chats !== null &&
+                    chats.map((chat: Chat) => (
+                      <ChatList
+                        key={chat._id}
+                        chat={chat}
+                        setSearch={setSearch}
+                      />
+                    ))}
+                </div>
+              )}
+            </>
           ) : (
             <div className="w-full h-fit">
               {filteredChats &&

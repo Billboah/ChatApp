@@ -1,5 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FaAngleDown, FaArrowLeft } from 'react-icons/fa';
+import {
+  FaAngleDown,
+  FaArrowLeft,
+  FaUserFriends,
+  FaUser,
+} from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import { setInfo, setSmallScreen } from '../../state/reducers/screen';
 import {
@@ -33,6 +38,7 @@ export default function chatMessages() {
   const [isTyping, setIsTyping] = useState(false);
   const [typer, setTyper] = useState('');
   const [scrollButton, setScrollButton] = useState(false);
+  const [reSendMessage, setReSendMessage] = useState<Message[]>([]);
 
   //scrolling to the bottom automatically
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -115,8 +121,10 @@ export default function chatMessages() {
   };
 
   //send a message
-  const sendMessage = (message: any) => {
+  const sendMessage = (message: Message) => {
     setMessages([...messages, message]);
+
+    setReSendMessage([...reSendMessage, message]);
 
     const config: AxiosRequestConfig<any> = {
       headers: {
@@ -136,12 +144,28 @@ export default function chatMessages() {
           (msg) => msg._id === message._id,
         );
 
+        const indexToRemove = reSendMessage.findIndex(
+          (msg: Message) => msg._id === message._id,
+        );
+
+        if (indexToRemove !== -1) {
+          reSendMessage.splice(indexToRemove, 1);
+        }
+
         if (messageIndex === -1) {
           setMessages([...messages, response.data]);
+          setMessageLoadingError((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [message._id]: false,
+          }));
         } else {
           const updatedMessages = [...messages];
           updatedMessages[messageIndex] = response.data;
           setMessages(updatedMessages);
+          setMessageLoadingError((prevSelectLoading: any) => ({
+            ...prevSelectLoading,
+            [message._id]: false,
+          }));
         }
         dispatch(updateChats(response.data));
         dispatch(setNewMessage(response.data));
@@ -152,26 +176,22 @@ export default function chatMessages() {
         if (error.response) {
           setMessageLoadingError((prevSelectLoading: any) => ({
             ...prevSelectLoading,
-            [message]: false,
+            [message._id]: true,
           }));
           console.error('Server error:', error.response.data.error);
-          setMessageLoadingError((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [message]: false,
-          }));
         } else if (error.request) {
           alert(
             'Cannot reach the server. Please check your internet connection.',
           );
           setMessageLoadingError((prevSelectLoading: any) => ({
             ...prevSelectLoading,
-            [message]: false,
+            [message._id]: true,
           }));
         } else {
           console.error('Error:', error.message);
           setMessageLoadingError((prevSelectLoading: any) => ({
             ...prevSelectLoading,
-            [message]: false,
+            [message._id]: true,
           }));
         }
       });
@@ -194,14 +214,16 @@ export default function chatMessages() {
         socket.emit('join chat', selectedChat && selectedChat._id);
       })
       .catch((error) => {
-        setLoadingMessages(false);
         if (error.response) {
+          setLoadingMessages(false);
           console.error('Server error:', error.response.data.error);
         } else if (error.request) {
+          setLoadingMessages(false);
           alert(
             'Cannot reach the server. Please check your internet connection.',
           );
         } else {
+          setLoadingMessages(false);
           console.error('Error:', error.message);
         }
       });
@@ -216,16 +238,23 @@ export default function chatMessages() {
   }, [selectedChat]);
 
   //add message to messages  in socket.io
+  // useEffect(() => {
+  //   socket.on('message received', (newMessageReceived) => {
+  //     console.log(newMessageReceived);
+  //     if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
+  //       //give notification
+  //       dispatch(updateChats(newMessageReceived));
+  //     } else {
+  //       setMessages([...messages, newMessageReceived]);
+  //     }
+  //   });
+  // });
+
   useEffect(() => {
     socket.on('message received', (newMessageReceived) => {
-      if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
-        //give notification
-        dispatch(updateChats(newMessageReceived));
-      } else {
-        setMessages([...messages, newMessageReceived]);
-      }
+      console.log(newMessageReceived);
     });
-  });
+  }, []);
 
   return (
     <div className="flex w-full h-full">
@@ -253,16 +282,34 @@ export default function chatMessages() {
                 className="h-full w-full flex justify-start items-center"
               >
                 {user && (
-                  <img
-                    src={
-                      selectedChat?.isGroupChat === false
-                        ? getSender(user, selectedChat?.users).pic
-                        : selectedChat?.pic
-                    }
-                    alt=""
-                    title="Profile details"
-                    className="rounded-full h-[35px] w-[35px] bg-gray-400"
-                  />
+                  <div className="rounded-full h-[35px] w-[35px] bg-gray-400">
+                    {selectedChat?.isGroupChat ? (
+                      <div className="flex justify-center items-center w-full h-full">
+                        {selectedChat?.pic ? (
+                          <img
+                            src={selectedChat?.pic}
+                            alt="group icon"
+                            title="Profile details"
+                            className="h-full w-full rounded-full"
+                          />
+                        ) : (
+                          <FaUserFriends color="white" size={25} />
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex justify-center items-center w-full h-full">
+                        {getSender(user, selectedChat?.users).pic ? (
+                          <img
+                            src={getSender(user, selectedChat?.users).pic}
+                            alt="user profile"
+                            className="h-full w-full rounded-full "
+                          />
+                        ) : (
+                          <FaUser color="white" size={25} />
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <div className="w-[90%] min-w-[20px] px-3 flex flex-col items-start ">
@@ -330,8 +377,11 @@ export default function chatMessages() {
             ) : (
               <DisplayMessages
                 messageLoadingError={messageLoadingError}
+                setLoadingMessagesError={setMessageLoadingError}
                 messages={messages}
                 contentRef={contentRef}
+                sendMessage={sendMessage}
+                reSendMessage={reSendMessage}
               />
             )}
           </div>

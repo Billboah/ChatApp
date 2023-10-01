@@ -6,6 +6,7 @@ import { RootState } from '../state/reducers';
 import { useSelector } from 'react-redux';
 import { SkeletonLoading } from '../config/ChatLoading';
 import { Chat, User } from '../types';
+import { FaUser } from 'react-icons/fa';
 
 type Props = {
   handleFunction: (userInfo: User) => void;
@@ -100,12 +101,18 @@ const SearchResult: React.FC<Props> = ({
             key={user._id}
           >
             <div className="flex justify-between items-center">
-              <div className="w-full flex items-center">
-                <img
-                  src={user?.pic}
-                  alt="Profile"
-                  className="w-[30px] h-[30px] rounded-full bg-gray-400"
-                />
+              <div className="w-full flex items-center ">
+                <div className="flex justify-center items-center w-[30px] h-[30px] rounded-full bg-gray-400">
+                  {user.pic ? (
+                    <img
+                      src={user?.pic}
+                      alt="Profile"
+                      className="w-full h-full rounded-full "
+                    />
+                  ) : (
+                    <FaUser color="white" size={20} />
+                  )}
+                </div>
                 <div className="flex flex-col items-start w-full pr-5 ml-[10px]">
                   <p className="truncate text-left">{user?.username}</p>
                   <p className=" text-sm text-left w-full truncate">

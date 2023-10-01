@@ -96,20 +96,24 @@ function CreateGroupChat() {
     <div className="flex justify-center items-center absolute top-0 left-0 h-full w-full  bg-black bg-opacity-30 z-30">
       <div
         ref={ref}
-        className="flex flex-col items-center w-full h-fit max-h-[550px]  max-w-[400px] px-[20px] py-[40px] bg-gray-200 relative rounded-[10px]"
+        className="flex flex-col items-center w-full h-fit max-h-[550px]  max-w-[400px]  py-[40px] bg-gray-200 relative rounded-[10px]"
       >
-        <h2 className="text-xl font-bold mb-[20px]">Create a new group chat</h2>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value), setError('');
-          }}
-          placeholder="Chat name"
-          className="outline-none w-full px-[15px] py-[5px] my-[10px] rounded-sm"
-          required
-        />
-        <div className="w-full flex items-center justify-start m-1">
+        <h2 className="text-xl font-bold mb-[20px] px-[20px]">
+          Create a new group chat
+        </h2>
+        <div className="w-full px-[20px]">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => {
+              setName(e.target.value), setError('');
+            }}
+            placeholder="Chat name"
+            className="outline-none w-full px-[15px] py-[5px]  my-[10px] rounded-sm"
+            required
+          />
+        </div>
+        <div className="w-full flex items-center justify-start px-[20px]">
           <div className=" inline-block">
             <div className="h-[40px] w-[40px] rounded-full border border-gray-400  bg-white relative cursor-pointer">
               <label htmlFor="createGroupInput">
@@ -139,20 +143,22 @@ function CreateGroupChat() {
         </div>
         {error && (
           <div>
-            <p className="text-sm text-red-500 before:content-['*'] before:text-red-500">
+            <p className="text-sm px-[20px] text-red-500 before:content-['*'] before:text-red-500">
               {error}
             </p>
           </div>
         )}
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value), setError('');
-          }}
-          placeholder="Add users eg. Bill, Mike"
-          className="outline-none w-full px-[15px] py-[5px] my-[10px] rounded-sm"
-        />
+        <div className="px-[20px] w-full">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value), setError('');
+            }}
+            placeholder="Add users eg. Bill, Mike"
+            className="outline-none w-full px-[15px] py-[5px] my-[10px] rounded-sm"
+          />
+        </div>
         <div className="flex flex-wrap w-full py-[5px] border border-1 border-b-gray-400">
           {chatList.map((user) => (
             <div
@@ -188,7 +194,7 @@ function CreateGroupChat() {
         </button>
 
         <button
-          className="w-[200px] absolute bottom-0 right-0 font-bold bg-gray-400 active:bg-gray-500 rounded-3xl m-2 px-3 py-1"
+          className="w-[200px] absolute bottom-0 right-0 font-bold bg-gray-300 active:bg-gray-500 rounded-3xl m-2 px-3 py-1 border border-gray-500"
           onClick={handleCreateGroup}
           disabled={createGroupLoading}
         >
