@@ -39,18 +39,27 @@ const EmailValidator = __importStar(require("email-validator"));
 const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true, lowercase: true,
+    email: {
+        type: String, required: true, unique: true, lowercase: true,
         validate: {
             validator: EmailValidator.validate,
             message: (props) => `${props.value} is not valid email address!`,
-        }, },
+        },
+    },
     selectedChat: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Chat',
     },
+    unreadMessages: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Message',
+            default: [],
+        },
+    ],
     password: { type: String, minLength: 8, required: true },
     confirmPassword: { type: String, required: true, minLength: 8, },
-    pic: { type: String, default: "https://upload.wikimedia.org/wikipedia/commons/7/70/User_icon_BLACK-01.png" }
+    pic: { type: String }
 }, {
     timestamps: true
 });
@@ -83,5 +92,5 @@ UserSchema.methods.comparePassword = function (candidatePassword) {
         }
     });
 };
-const User = mongoose.model('User', UserSchema);
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
 exports.User = User;

@@ -18,7 +18,7 @@ const chatModel = new mongoose_1.default.Schema({
     chatName: { type: String, trim: true },
     isGroupChat: { type: Boolean, default: false },
     pic: {
-        type: String, default: "https://www.transparentpng.com/thumb/user/black-username-png-icon-free--4jlZLb.png",
+        type: String,
     },
     users: [{
             type: mongoose_1.default.Schema.Types.ObjectId,
@@ -28,11 +28,6 @@ const chatModel = new mongoose_1.default.Schema({
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: "Message",
     },
-    unreadMessages: [{
-            type: mongoose_1.default.Schema.Types.ObjectId,
-            ref: "Message",
-            default: [],
-        },],
     groupAdmin: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: "User",
@@ -49,5 +44,5 @@ chatModel.pre('save', function (next) {
         next();
     });
 });
-const Chat = mongoose_1.default.model("Chat", chatModel);
+const Chat = mongoose_1.default.models.Chat || mongoose_1.default.model('Chat', chatModel);
 exports.Chat = Chat;

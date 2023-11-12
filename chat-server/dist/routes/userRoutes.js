@@ -11,4 +11,5 @@ router.get('/', authMiddleware_1.authenticate, userController_1.searchUsersContr
 router.put('/rename', authMiddleware_1.authenticate, userController_1.changeUserName);
 //update profile icon
 router.put('/updatepic', authMiddleware_1.authenticate, userController_1.changePicController);
+router.put('/updateselectedchat', authMiddleware_1.authenticate, userController_1.updateSelectedChat);
 exports.default = router;

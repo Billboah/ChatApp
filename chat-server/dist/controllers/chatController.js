@@ -31,7 +31,6 @@ const createChatController = (req, res) => __awaiter(void 0, void 0, void 0, fun
         })
             .populate('users', '-password')
             .populate('latestMessage')
-            .populate('unreadMessages')
             .populate('latestMessage.sender', 'username pic email');
         if (isChat.length > 0) {
             return res.send({
@@ -90,12 +89,24 @@ const getAllChatController = (req, res) => __awaiter(void 0, void 0, void 0, fun
             .populate('users', '-password')
             .populate('groupAdmin', '-password')
             .populate('latestMessage')
-            .populate('unreadMessages')
             .sort({ updatedAt: -1 });
-        const populatedResults = yield userModels_1.User.populate(results, {
-            path: 'latestMessage.sender',
-            select: 'username pic email',
-        });
+        const populatedResults = yield userModels_1.User.populate(results, [
+            {
+                path: 'users',
+                select: '-password',
+                populate: {
+                    path: 'unreadMessages',
+                    populate: {
+                        path: 'chat',
+                        select: 'chatName isGroupChat',
+                    },
+                },
+            },
+            {
+                path: 'latestMessage.sender',
+                select: 'username pic email',
+            },
+        ]);
         res.status(200).json(populatedResults);
     }
     catch (error) {
@@ -125,7 +136,6 @@ const createGroupChatController = (req, res) => __awaiter(void 0, void 0, void 0
         const fullGroupChat = yield chatModel_1.Chat.findOne({ _id: groupChat._id })
             .populate('users', '-password')
             .populate('groupAdmin', '-password')
-            .populate('unreadMessages')
             .populate('latestMessage');
         res.status(200).json(fullGroupChat);
     }
@@ -178,11 +188,7 @@ const removeMemberController = (req, res) => __awaiter(void 0, void 0, void 0, f
     try {
         const { chatId, userId } = req.body;
         const chat = yield chatModel_1.Chat.findOne({ _id: chatId });
-        if (chat.groupAdmin != req.user.id) {
-            res.status(400);
-            throw new Error('You are not authorized to perform this function');
-        }
-        else {
+        if (chat.groupAdmin.toString() === req.user._id.toString()) {
             const removedChat = yield chatModel_1.Chat.findByIdAndUpdate(chatId, {
                 $pull: { users: userId },
             }, { new: true })
@@ -192,6 +198,10 @@ const removeMemberController = (req, res) => __awaiter(void 0, void 0, void 0, f
                 return res.status(400).send('Chat Not Found');
             }
             res.json(removedChat);
+        }
+        else {
+            res.status(400);
+            throw new Error('You are not authorized to perform this function');
         }
     }
     catch (error) {
@@ -204,10 +214,7 @@ const addMemberController = (req, res) => __awaiter(void 0, void 0, void 0, func
         const users = JSON.parse(req.body.userIds);
         const chatId = req.body.chatId;
         const chat = yield chatModel_1.Chat.findOne({ _id: chatId });
-        if (chat.groupAdmin != req.user.id) {
-            throw new Error('You are not authorized to perform this function');
-        }
-        else {
+        if (chat.groupAdmin.toString() === req.user._id.toString()) {
             const addedChat = yield chatModel_1.Chat.findByIdAndUpdate(chatId, {
                 $push: { users: users },
             }, { new: true })
@@ -217,6 +224,9 @@ const addMemberController = (req, res) => __awaiter(void 0, void 0, void 0, func
                 return res.status(404).send('Chat Not Found');
             }
             res.json(addedChat);
+        }
+        else {
+            throw new Error('You are not authorized to perform this function');
         }
     }
     catch (error) {

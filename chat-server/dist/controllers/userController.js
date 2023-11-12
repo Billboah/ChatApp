@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.changePicController = exports.changeUserName = exports.searchUsersController = exports.signInController = exports.signupController = void 0;
+exports.updateSelectedChat = exports.changePicController = exports.changeUserName = exports.searchUsersController = exports.signInController = exports.signupController = void 0;
 const userModels_1 = require("../models/userModels");
 const generateToken_1 = __importDefault(require("../config/generateToken"));
 const signupController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -38,6 +38,7 @@ const signupController = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 email: user.email,
                 pic: user.pic,
                 selectedChat: user.selectedChat,
+                unreadMessages: user.unreadMessages,
                 token: (0, generateToken_1.default)(user._id),
             });
         }
@@ -67,6 +68,7 @@ const signInController = (req, res) => __awaiter(void 0, void 0, void 0, functio
                 email: user.email,
                 pic: user.pic,
                 selectedChat: user.selectedChat,
+                unreadMessages: user.unreadMessages,
                 token: (0, generateToken_1.default)(user._id),
             });
         }
@@ -116,6 +118,7 @@ const changeUserName = (req, res) => __awaiter(void 0, void 0, void 0, function*
             email: updatedUser.email,
             pic: updatedUser.pic,
             selectedChat: updatedUser.selectedChat,
+            unreadMessages: updatedUser.unreadMessages,
             token: (0, generateToken_1.default)(updatedUser._id),
         });
     }
@@ -145,6 +148,7 @@ const changePicController = (req, res) => __awaiter(void 0, void 0, void 0, func
             email: updatedUser.email,
             pic: updatedUser.pic,
             selectedChat: updatedUser.selectedChat,
+            unreadMessages: updatedUser.unreadMessages,
             token: (0, generateToken_1.default)(updatedUser._id),
         });
     }
@@ -153,3 +157,27 @@ const changePicController = (req, res) => __awaiter(void 0, void 0, void 0, func
     }
 });
 exports.changePicController = changePicController;
+const updateSelectedChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { selectedChat } = req.body;
+    const selectedChatId = selectedChat ? selectedChat._id : null;
+    const userId = req.user._id;
+    try {
+        if (userId) {
+            if (selectedChatId) {
+                yield userModels_1.User.findByIdAndUpdate(userId, {
+                    selectedChat: selectedChatId,
+                }, { new: true });
+            }
+            else {
+                yield userModels_1.User.findByIdAndUpdate(userId, {
+                    selectedChat: null,
+                }, { new: true });
+            }
+        }
+        res.json();
+    }
+    catch (error) {
+        res.status(error.status || 500).json({ error: error.message });
+    }
+});
+exports.updateSelectedChat = updateSelectedChat;
