@@ -50,9 +50,9 @@ export const createChatController = async (req: CustomRequest, res: Response) =>
         users: [currentUser._id, targetUser._id],
       };
 
-      const createdChat: IChat = await Chat.create(chatData);
+      const createdChat = await Chat.create(chatData);
 
-      const fullChat: IChat | null = await Chat.findById(createdChat._id)
+      const fullChat = await Chat.findById(createdChat._id)
         .populate('users', '-password')
         .populate('latestMessage')
         .populate('latestMessage.sender', 'username pic email');
@@ -82,7 +82,7 @@ export const createChatController = async (req: CustomRequest, res: Response) =>
 
 export const getAllChatController = async (req: CustomRequest, res: Response) => {
   try {
-    const results: IChat[] = await Chat.find({ users: req.user._id })
+    const results = await Chat.find({ users: req.user._id })
       .populate('users', '-password')
       .populate('groupAdmin', '-password')
       .populate('latestMessage')

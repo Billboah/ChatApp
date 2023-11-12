@@ -144,7 +144,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
           <FaTimes size={20} />
         </button>
         <button
-          className="w-[200px] absolute bottom-0 right-0 font-bold bg-gray-300 active:bg-gray-500 rounded-3xl m-2 px-3 border border-gray-500"
+          className="w-[200px] absolute bottom-0 right-0  button"
           onClick={handleAddUsers}
           disabled={addLoading}
         >

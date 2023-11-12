@@ -114,11 +114,11 @@ export default function chatSidebar() {
   const filteredChats = chats?.filter(
     (item: { chatName: string; users: any[]; isGroupChat: boolean }) => {
       if (item.isGroupChat === true) {
-        return item.chatName.toLowerCase().includes(search);
+        return item.chatName.toLowerCase().includes(search.trim());
       } else {
         return item?.users[0]._id === user?._id
-          ? item.users[1].username.toLowerCase().includes(search)
-          : item.users[0].username.toLowerCase().includes(search);
+          ? item.users[1].username.toLowerCase().includes(search.trim())
+          : item.users[0].username.toLowerCase().includes(search.trim());
       }
     },
   );
@@ -164,7 +164,7 @@ export default function chatSidebar() {
         </div>
 
         <div className="w-full h-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
-          {!search ? (
+          {!search.trim() ? (
             <>
               {chatsLoading ? (
                 <SkeletonLoading />

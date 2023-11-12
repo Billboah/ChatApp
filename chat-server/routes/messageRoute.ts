@@ -1,15 +1,12 @@
-import { Router, Request, Response } from 'express';
-import  {Chat, IChat } from '../models/chatModel'
+import { Router } from 'express';
 import {authenticate} from '../middleware/authMiddleware'
-import  {User, IUser } from '../models/userModels';
-import {Message, IMessage} from '../models/messageModel';
-import {getChatMessages, sendMessageController} from '../controllers/messageController'
+import {getChatMessages, sendMessage} from '../controllers/messageController'
 
 
 const router: Router = Router();
 
 
-router.post('/', authenticate, sendMessageController) 
+router.post('/', authenticate, sendMessage) 
 
 router.get('/:chatId', authenticate, getChatMessages)
 

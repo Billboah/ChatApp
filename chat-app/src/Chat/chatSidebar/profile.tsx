@@ -78,7 +78,7 @@ function Profile() {
 
   //change name
   const handleChangeName = () => {
-    if (user?.username === changeName || changeName === '') {
+    if (user?.username === changeName?.trim() || changeName?.trim() === '') {
       setNameEdit(false);
       return;
     } else {

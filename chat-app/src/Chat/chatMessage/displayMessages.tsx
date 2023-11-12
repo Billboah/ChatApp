@@ -10,18 +10,12 @@ type Props = {
   messageLoadingError: { [key: string]: boolean };
   messages: Message[];
   contentRef: React.MutableRefObject<HTMLDivElement | null>;
-  reSendMessage: Message[];
-  sendMessage: (message: Message) => void;
-  setLoadingMessagesError: any;
 };
 
 const DisplayMessages: React.FC<Props> = ({
   messageLoadingError,
   messages,
   contentRef,
-  reSendMessage,
-  sendMessage,
-  setLoadingMessagesError,
 }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
@@ -35,6 +29,7 @@ const DisplayMessages: React.FC<Props> = ({
 
   // Grouping messages by date and sender
   const groupedByDate: Record<string, Message[]> = {};
+  const groupedMessages: Record<string, Record<string, Message[]>> = {};
 
   messages.forEach((message) => {
     const date = message.updatedAt.split('T')[0];
@@ -44,43 +39,36 @@ const DisplayMessages: React.FC<Props> = ({
     groupedByDate[date].push(message);
   });
 
-  const groupedMessages: Record<string, Record<string, Message[]>> = {};
-
   for (const date in groupedByDate) {
     const messagesForDate = groupedByDate[date];
-    let senderGroups: Record<string, Message[]> = {};
+    const continuousSenderGroups: Message[][] = [];
 
-    let currentSender: any = null;
+    let currentSenderGroup: Message[] = [];
+    let prevSender = '';
 
     messagesForDate.forEach((message) => {
-      const senderId = message.sender._id;
-
-      if (currentSender === null || currentSender === senderId) {
-        if (!senderGroups) {
-          senderGroups = {};
+      if (message.sender._id !== prevSender) {
+        if (currentSenderGroup.length > 0) {
+          continuousSenderGroups.push(currentSenderGroup);
         }
-        if (!senderGroups[senderId]) {
-          senderGroups[senderId] = [];
-        }
-        senderGroups[senderId].push(message);
-      } else {
-        if (senderGroups) {
-          if (!groupedMessages[date]) {
-            groupedMessages[date] = {};
-          }
-          groupedMessages[date] = { ...groupedMessages[date], ...senderGroups };
-          senderGroups = {};
-        }
+        currentSenderGroup = [];
       }
-      currentSender = senderId;
+      currentSenderGroup.push(message);
+      prevSender = message.sender._id;
     });
 
-    if (senderGroups) {
-      if (!groupedMessages[date]) {
-        groupedMessages[date] = {};
-      }
-      groupedMessages[date] = { ...groupedMessages[date], ...senderGroups };
+    if (currentSenderGroup.length > 0) {
+      continuousSenderGroups.push(currentSenderGroup);
     }
+
+    if (!groupedMessages[date]) {
+      groupedMessages[date] = {};
+    }
+
+    continuousSenderGroups.forEach((senderGroup, groupIndex) => {
+      const sender = senderGroup[0].sender._id;
+      groupedMessages[date][`${sender}_${groupIndex + 1}`] = senderGroup;
+    });
   }
 
   //format date
@@ -93,7 +81,7 @@ const DisplayMessages: React.FC<Props> = ({
     } else if (isYesterday(messageDate)) {
       return 'Yesterday';
     } else if (isSameWeek(messageDate, today)) {
-      return format(messageDate, 'EEE');
+      return format(messageDate, 'EEEE');
     } else if (isSameYear(messageDate, today)) {
       return format(messageDate, 'EEE, d MMM');
     } else {
@@ -101,7 +89,6 @@ const DisplayMessages: React.FC<Props> = ({
     }
   };
 
-  //Resend message
   return (
     <div className={`flex flex-col w-full h-full `} ref={contentRef}>
       {Object.entries(groupedMessages).map(([date]) => (
@@ -129,18 +116,18 @@ const DisplayMessages: React.FC<Props> = ({
                       {selectedChat?.isGroupChat &&
                         message.sender._id !== user?._id && (
                           <div
-                            className={`mb-1 p-0 ${
+                            className={` p-0  ${
                               index === messagesArray.length - 1
                                 ? 'visible'
                                 : 'invisible'
                             } `}
                           >
-                            <div className="flex justify-center items-center h-[20px] w-[20px] rounded-full bg-gray-400 mr-2">
+                            <div className="flex justify-center items-center h-[20px] w-[20px] rounded-full bg-gray-400 mr-1 border-inherit shadow-md">
                               {message.sender.pic ? (
                                 <img
                                   src={message.sender.pic}
                                   alt="sender pic"
-                                  className="h-full w-full rounded-full "
+                                  className="h-[20px] w-[20px] rounded-full "
                                 />
                               ) : (
                                 <FaUser size={15} color="white" />
@@ -156,13 +143,13 @@ const DisplayMessages: React.FC<Props> = ({
                         } `}
                       >
                         <div
-                          className={`w-fit h-fit max-w-[90%] ${
+                          className={`w-fit h-fit max-w-[90%] border-inherit shadow-md ${
                             message.sender._id === user?._id
-                              ? 'bg-blue-200 before:right-[-15px] background-gradient-right'
-                              : 'bg-white before:left-[-15px] background-gradient-left'
+                              ? 'bg-blue-200 before:right-[-12px] background-gradient-right'
+                              : 'bg-white before:left-[-12px] background-gradient-left'
                           } ${
                             index === messagesArray.length - 1 &&
-                            "before:content-[' '] before:w-6 before:h-6 before:absolute before:bottom-0 before:rounded-full "
+                            "before:content-[' '] before:w-6 before:h-6 before:absolute before:bottom-[1px] before:rounded-full "
                           } rounded-lg px-2 py-1 `}
                         >
                           {selectedChat?.isGroupChat &&

@@ -15,7 +15,8 @@ import AddParticipant from './addParticipant';
 import { RootState } from '../../../state/reducers';
 import { ClipLoading, FadeLoading } from '../../../config/ChatLoading';
 import { BACKEND_API, getSender } from '../../../config/chatLogics';
-import { Chat } from '../../../types';
+import { Chat, User } from '../../../types';
+import CustomModal from '../../../components/Modal';
 
 function ChatInfo() {
   const dispatch = useDispatch();
@@ -35,6 +36,27 @@ function ChatInfo() {
   const [isHovered, setIsHovered] = useState(false);
   const [commonGroup, setCommonGroup] = useState([]);
   const [commonGroupLoading, setCommonGroupLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [participantId, setParticipantId] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  //handle remove user button
+  const removeUserButton = (userPass: User) => {
+    setIsModalOpen(true);
+    setParticipantId(userPass._id);
+    setModalMessage(
+      `Are you sure you want to  remove ${userPass.username} from  ${selectedChat?.chatName} group chat?`,
+    );
+  };
+
+  //handle leave group
+  const exitGroupChat = (user: User) => {
+    setIsModalOpen(true);
+    setParticipantId(user._id);
+    setModalMessage(
+      `Are you sure you want to leave ${selectedChat?.chatName}  group chat?`,
+    );
+  };
 
   //remove a group member
   const handleRemoveUser = (removeUser: string) => {
@@ -63,11 +85,22 @@ function ChatInfo() {
         }));
       })
       .catch((error) => {
-        console.error('Error:', error);
         setMemberLoading((prevSelectLoading: any) => ({
           ...prevSelectLoading,
           [removeUser]: false,
         }));
+        if (error.response) {
+          setCommonGroupLoading(false);
+          console.error('Server error:', error.response.data.error);
+        } else if (error.request) {
+          setCommonGroupLoading(false);
+          alert(
+            'Cannot reach the server. Please check your internet connection and refresh the page.',
+          );
+        } else {
+          setCommonGroupLoading(false);
+          console.error('Error:', error.message);
+        }
       });
   };
 
@@ -102,8 +135,19 @@ function ChatInfo() {
           setGroupIconLoading(false);
         })
         .catch((error) => {
-          console.error('Error:', error);
           setGroupIconLoading(false);
+          if (error.response) {
+            setCommonGroupLoading(false);
+            console.error('Server error:', error.response.data.error);
+          } else if (error.request) {
+            setCommonGroupLoading(false);
+            alert(
+              'Cannot reach the server. Please check your internet connection and refresh the page.',
+            );
+          } else {
+            setCommonGroupLoading(false);
+            console.error('Error:', error.message);
+          }
         });
     };
     reader.readAsDataURL(file);
@@ -111,7 +155,10 @@ function ChatInfo() {
 
   // change group name
   const handleChangeGroupName = () => {
-    if (selectedChat?.chatName === changeGroupName) {
+    if (
+      selectedChat?.chatName === changeGroupName?.trim() ||
+      changeGroupName?.trim() === ''
+    ) {
       setNameEdit(false);
       return;
     } else {
@@ -134,8 +181,19 @@ function ChatInfo() {
           setGroupNameLoading(false);
         })
         .catch((error) => {
-          console.error('Error:', error);
           setGroupNameLoading(false);
+          if (error.response) {
+            setCommonGroupLoading(false);
+            console.error('Server error:', error.response.data.error);
+          } else if (error.request) {
+            setCommonGroupLoading(false);
+            alert(
+              'Cannot reach the server. Please check your internet connection and refresh the page.',
+            );
+          } else {
+            setCommonGroupLoading(false);
+            console.error('Error:', error.message);
+          }
         });
     }
   };
@@ -199,7 +257,7 @@ function ChatInfo() {
             <h2 className="text-lg font-semibold ml-[20px]">Contact Info</h2>
           )}
         </nav>
-        <div className="flex flex-col relative  h-full m-0 p-0 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
+        <div className="flex flex-col h-full m-0 p-0 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
           <section className="flex items-center justify-center h-fit w-full py-[30px] px-[20px]  mb-[7px] bg-gray-300">
             {selectedChat?.isGroupChat ? (
               <div className="h-fit w-fit flex flex-col justify-center items-center rounded-full">
@@ -388,7 +446,7 @@ function ChatInfo() {
                     {selectedChat?.groupAdmin._id === user?._id && (
                       <button
                         title="Remove a participant"
-                        onClick={() => handleRemoveUser(participant._id)}
+                        onClick={() => removeUserButton(participant)}
                         disabled={memberLoading[participant._id]}
                         className={`${
                           participant._id === selectedChat.groupAdmin._id
@@ -476,7 +534,7 @@ function ChatInfo() {
                 <div className="w-full">
                   {user && selectedChat?.groupAdmin._id !== user?._id && (
                     <button
-                      onClick={() => handleRemoveUser(user._id)}
+                      onClick={() => exitGroupChat(user)}
                       className="w-full flex justify-between items-center border-b border-gray-400 px-[20px] py-[10px] hover:bg-gray-200 outline-none"
                       disabled={memberLoading[user._id]}
                     >
@@ -499,6 +557,15 @@ function ChatInfo() {
           </section>
         </div>
         {addUser && <AddParticipant setAddUser={setAddUser} />}
+        {isModalOpen && (
+          <CustomModal
+            onRequestClose={() => setIsModalOpen(false)}
+            onConfirm={() => {
+              handleRemoveUser(participantId), setIsModalOpen(false);
+            }}
+            modalMessage={modalMessage}
+          />
+        )}
       </div>
     )
   );

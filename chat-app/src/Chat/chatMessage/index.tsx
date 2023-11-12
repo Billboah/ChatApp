@@ -20,7 +20,7 @@ import { io } from 'socket.io-client';
 import { RootState } from '../../state/reducers';
 import { ClipLoading } from '../../config/ChatLoading';
 import { BACKEND_API, getSender } from '../../config/chatLogics';
-import { Message, ModifyMessage } from '../../types';
+import { Message } from '../../types';
 
 const socket = io(BACKEND_API);
 
@@ -38,7 +38,6 @@ export default function chatMessages() {
   const [isTyping, setIsTyping] = useState(false);
   const [typer, setTyper] = useState('');
   const [scrollButton, setScrollButton] = useState(false);
-  const [reSendMessage, setReSendMessage] = useState<Message[]>([]);
 
   //scrolling to the bottom automatically
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
@@ -124,8 +123,6 @@ export default function chatMessages() {
   const sendMessage = (message: Message) => {
     setMessages([...messages, message]);
 
-    setReSendMessage([...reSendMessage, message]);
-
     const config: AxiosRequestConfig<any> = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
@@ -144,28 +141,12 @@ export default function chatMessages() {
           (msg) => msg._id === message._id,
         );
 
-        const indexToRemove = reSendMessage.findIndex(
-          (msg: Message) => msg._id === message._id,
-        );
-
-        if (indexToRemove !== -1) {
-          reSendMessage.splice(indexToRemove, 1);
-        }
-
-        if (messageIndex === -1) {
-          setMessages([...messages, response.data]);
-          setMessageLoadingError((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [message._id]: false,
-          }));
-        } else {
+        if (messageIndex !== -1) {
           const updatedMessages = [...messages];
           updatedMessages[messageIndex] = response.data;
           setMessages(updatedMessages);
-          setMessageLoadingError((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [message._id]: false,
-          }));
+        } else {
+          setMessages([...messages, response.data]);
         }
         dispatch(updateChats(response.data));
         dispatch(setNewMessage(response.data));
@@ -238,33 +219,26 @@ export default function chatMessages() {
   }, [selectedChat]);
 
   //add message to messages  in socket.io
-  // useEffect(() => {
-  //   socket.on('message received', (newMessageReceived) => {
-  //     console.log(newMessageReceived);
-  //     if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
-  //       //give notification
-  //       dispatch(updateChats(newMessageReceived));
-  //     } else {
-  //       setMessages([...messages, newMessageReceived]);
-  //     }
-  //   });
-  // });
-
   useEffect(() => {
     socket.on('message received', (newMessageReceived) => {
-      console.log(newMessageReceived);
+      if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
+        //give notification
+        dispatch(updateChats(newMessageReceived));
+      } else {
+        setMessages([...messages, newMessageReceived]);
+      }
     });
-  }, []);
+  });
 
   return (
     <div className="flex w-full h-full">
       <div
         className={`${
           info ? 'hidden xl:flex flex-1 ' : ''
-        } flex flex-col  w-full h-full bg-[url(https://images.rawpixel.com/image_800/cHJpdmF0ZS9zdGF0aWMvZmlsZXMvd2Vic2l0ZS8yMDIyLTA2L2pvYjk3OS1iYWNrZ3JvdW5kLTA5LmpwZw.jpg)]  bg-no-repeat bg-cover`}
+        } flex flex-col  w-full h-full bg-[url(https://images.rawpixel.com/image_800/cHJpdmF0ZS9zdGF0aWMvZmlsZXMvd2Vic2l0ZS8yMDIyLTA2L2pvYjk3OS1iYWNrZ3JvdW5kLTA5LmpwZw.jpg)]  bg-no-repeat bg-cover `}
       >
         {selectedChat && (
-          <nav className=" bg-gray-200 w-full h-[50px] px-4 ">
+          <nav className=" bg-gray-200 w-full h-[50px] px-4 border-b-inherit shadow-md">
             <div className="h-full w-full flex justify-start items-center ">
               <button
                 title="Back"
@@ -363,8 +337,10 @@ export default function chatMessages() {
             {scrollButton && (
               <button
                 onClick={scrollToBottom}
-                className="rounded-l-md fixed bottom-[55px] right-0 px-3 py-1 bg-black opacity-40 "
+                className="rounded-full fixed bottom-[55px] right-[15px] p-2 bg-black opacity-50 z-30 border border-inherit shadow-md"
                 title="Move to the latest message"
+                aria-label="view latest message"
+                name="scrollToButton"
               >
                 <FaAngleDown color="white" />
               </button>
@@ -377,11 +353,8 @@ export default function chatMessages() {
             ) : (
               <DisplayMessages
                 messageLoadingError={messageLoadingError}
-                setLoadingMessagesError={setMessageLoadingError}
                 messages={messages}
                 contentRef={contentRef}
-                sendMessage={sendMessage}
-                reSendMessage={reSendMessage}
               />
             )}
           </div>

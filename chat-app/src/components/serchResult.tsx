@@ -28,6 +28,9 @@ const SearchResult: React.FC<Props> = ({
 
   //search user
   const handleSearch = async () => {
+    if (search.trim() === '') {
+      return;
+    }
     setSearchLoading(true);
     try {
       setSearchLoading(true);
@@ -37,7 +40,7 @@ const SearchResult: React.FC<Props> = ({
         },
       };
       const { data } = await axios.get(
-        `${BACKEND_API}/api/user?search=${search}`,
+        `${BACKEND_API}/api/user?search=${search.trim()}`,
         config,
       );
 

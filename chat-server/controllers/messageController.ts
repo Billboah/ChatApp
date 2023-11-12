@@ -4,7 +4,7 @@ import { Message } from '../models/messageModel';
 import { User } from '../models/userModels';
 import { CustomRequest } from '../config/express'
 
-export const sendMessageController = async (req: CustomRequest, res: Response) => {
+export const sendMessage = async (req: CustomRequest, res: Response) => {
   const { content, chatId }: { content: string, chatId: string } = req.body
 
   if (!content || !chatId) {
@@ -20,14 +20,15 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
   };
 
   try {
-    let message = await Message.create(newMessage)
+    const message = await Message.create(newMessage);
 
-    await message.populate('sender', 'username pic email');
-    await message.populate('chat');
+    await message.populate('sender', 'username pic email')
+    await message.populate('chat')
     await User.populate(message.chat, {
       path: 'users',
-      select: 'username pic email',
+      select: 'username pic email selectedChat unreadMessages',
     });
+    
 
     await Chat.findByIdAndUpdate(chatId, {
       latestMessage: message,
@@ -37,7 +38,7 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
 
     const usersInChat = chat.users;
 
-    User && await User.updateMany(
+     await User.updateMany(
       {
         _id: { $in: usersInChat },
         selectedChat: { $ne: chatId },
@@ -51,6 +52,7 @@ export const sendMessageController = async (req: CustomRequest, res: Response) =
     );
 
     res.json(message)
+
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
   }
@@ -69,9 +71,15 @@ export const getChatMessages = async (req: CustomRequest, res: Response) => {
 
     if (userId) {
       const message = await Message.find({ chat: chatId })
-        .populate("sender", "username pic email")
-        .populate("chat")
-
+      .populate("sender", "username pic email")
+      .populate({
+        path: "chat",
+        populate: {
+          path: "users",
+          select: "username pic email selectedChat unreadMessages",
+        },
+      });
+    
       await User.findByIdAndUpdate(
         userId,
         {

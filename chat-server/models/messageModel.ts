@@ -16,6 +16,6 @@ const messageModel = new mongoose.Schema({
               timestamps: true
 })
 
-const Message = mongoose.model<IMessage>("Message", messageModel )
+const Message = mongoose.models.Message ||  mongoose.model("Message", messageModel )
 
 export {Message, IMessage}

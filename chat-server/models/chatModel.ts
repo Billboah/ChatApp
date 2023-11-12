@@ -44,6 +44,6 @@ chatModel.pre('save', async function (next) {
 });
 
 
-const Chat = mongoose.model<IChat>("Chat", chatModel);
+ const Chat = mongoose.models.Chat || mongoose.model('Chat', chatModel);
 
 export { Chat, IChat }

@@ -4,7 +4,7 @@ import { setSelectedChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { setSmallScreen } from '../../state/reducers/screen';
 import { Chat, Message } from '../../types';
-import { format, isToday, isYesterday } from 'date-fns';
+import { format, isToday, isYesterday, isSameWeek, isSameYear } from 'date-fns';
 import { getSender, getUnreadMessages } from '../../config/chatLogics';
 import { FaUser, FaUserFriends } from 'react-icons/fa';
 
@@ -27,6 +27,22 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
     const mongoDBUpdatedAt = message?.updatedAt;
     const updatedAtDate = new Date(mongoDBUpdatedAt);
     return format(updatedAtDate, 'HH:mm');
+  };
+  const formattedDateAndTime = (date: any) => {
+    const today = new Date();
+    const messageDate = new Date(date);
+
+    if (isToday(messageDate)) {
+      return format(messageDate, 'HH:mm');
+    } else if (isYesterday(messageDate)) {
+      return 'Yesterday';
+    } else if (isSameWeek(messageDate, today)) {
+      return format(messageDate, 'd/MM/yyyy');
+    } else if (isSameYear(messageDate, today)) {
+      return format(messageDate, ' d/MM/yyyy');
+    } else {
+      return format(messageDate, ' d/MM/yyyy');
+    }
   };
 
   return (
@@ -104,7 +120,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
             </div>
           </div>
         )}
-        <div className="h-full w-fit flex flex-col items-center justify-between pb-2">
+        <div className="h-full w-fit flex flex-col items-end justify-between pb-2">
           {chat.latestMessage && (
             <p
               className={`text-xs ${
@@ -113,11 +129,11 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
                   : 'text-gray-500'
               } `}
             >
-              {timeFormat(chat.latestMessage)}
+              {formattedDateAndTime(chat.latestMessage?.updatedAt)}
             </p>
           )}
           {getUnreadMessages(chat, user)?.length > 0 && (
-            <div className="bg-blue-500 rounded-full px-1 text-white text-xs ">
+            <div className="bg-blue-500 rounded-full px-1 font-[10px] text-white text-[10px] ">
               {getUnreadMessages(chat, user)?.length}
             </div>
           )}

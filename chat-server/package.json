@@ -30,7 +30,9 @@
     "@typescript-eslint/parser": "^5.59.7",
     "eslint": "^8.41.0",
     "eslint-plugin-react": "^7.32.2",
+    "jest": "^29.7.0",
     "nodemon": "^2.0.22",
+    "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2"
   }

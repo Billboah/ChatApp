@@ -12,6 +12,7 @@ import { BACKEND_API } from '../config/chatLogics';
 function Chats() {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { info } = useSelector((state: RootState) => state.screen);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const { smallScreen } = useSelector((state: RootState) => state.screen);
   const { newGroup } = useSelector((state: RootState) => state.screen);
