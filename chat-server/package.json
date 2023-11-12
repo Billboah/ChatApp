@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon api/index.ts",
-    "build": "tsc",
+    "build": "mkdir -p public && tsc --outDir public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "William Yeboah",
