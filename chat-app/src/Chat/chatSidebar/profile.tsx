@@ -190,7 +190,7 @@ function Profile() {
                 className="bg-inherit outline-none text-lg font-bold mt-[10px] w-full"
               />
             ) : (
-              <p className="text-lg font-bold mt-[10px] mr-4">
+              <p className="text-lg font-bold mt-[10px] mr-4 capitalize">
                 {user?.username}
               </p>
             )}
@@ -223,7 +223,7 @@ function Profile() {
               <span className="font-bold ">Email: </span>
               <span>{user?.email}</span>
             </p>
-            <p className=" ">
+            <p className=" capitalize">
               <span className="font-bold ">Name: </span>
               <span>{user?.name}</span>
             </p>

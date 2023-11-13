@@ -32,10 +32,12 @@ function Chats() {
       },
     };
 
+    const selectedChatId = selectedChat ? selectedChat._id : null;
+
     axios
       .put(
         `${BACKEND_API}/api/user/updateselectedchat`,
-        { selectedChat },
+        { selectedChatId },
         config,
       )
       .catch((error) => {
@@ -70,7 +72,7 @@ function Chats() {
   }, []);
 
   return (
-    <div className="flex w-full h-screen m-0 p-0">
+    <div className="flex w-full h-full m-0 p-0">
       <div
         className={`${
           smallScreen ? 'block h-full w-full' : 'hidden'

@@ -165,7 +165,7 @@ function CreateGroupChat() {
               key={user?._id}
               className="flex justify-between items-center bg-gray-400 w-fit max-w-[120px] rounded-xl mx-1 my-1 px-[7px]"
             >
-              <p className="truncate mr-1">{user.username}</p>
+              <p className="truncate mr-1 capitalize">{user.username}</p>
               <button
                 onClick={() =>
                   setChatList(chatList?.filter((obj) => obj._id !== user._id))

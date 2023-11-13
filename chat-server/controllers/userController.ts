@@ -169,8 +169,7 @@ export const changePicController = async (req: CustomRequest, res: Response) => 
 
 export const updateSelectedChat = async (req: CustomRequest, res: Response) => {
 
-  const { selectedChat } = req.body
-  const selectedChatId = selectedChat ? selectedChat._id : null
+  const { selectedChatId } = req.body
   const userId = req.user._id
 
   try {
@@ -184,7 +183,6 @@ export const updateSelectedChat = async (req: CustomRequest, res: Response) => {
           },
           { new: true }
         );
-
       } else {
         await User.findByIdAndUpdate(
           userId,

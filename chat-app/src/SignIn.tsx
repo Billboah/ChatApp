@@ -50,8 +50,8 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen w-screen">
-      <div className="h-fit w-full min-w-[200px] max-w-[350px] px-5 py-5 flex flex-col justify-center items-center bg-white rounded-xl relative  border-1-inherit shadow-lg">
+    <div className="flex flex-col justify-center items-center h-fit min-h-screen w-full">
+      <div className="h-fit w-full min-w-[200px] max-w-[350px] px-5 py-5 flex flex-col justify-center items-center bg-white rounded-xl relative  border-1-inherit shadow-lg m-1">
         <h1 className="font-bold mb-[20px] text-xl text-blue-600">Chat App</h1>
         <h2 className="font-bold mb-[20px] text-xl">Sign In</h2>
         <form
@@ -104,7 +104,7 @@ export default function SignIn() {
                   marginLeft: '-21px',
                 }}
               >
-                {showPassword ? <FaEye /> : <FaEyeSlash />}
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
           </div>

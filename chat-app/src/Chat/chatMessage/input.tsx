@@ -49,7 +49,7 @@ const Input: React.FC<Props> = ({
   };
 
   const handleKeyPress = (e: any) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (window.innerWidth > 750 && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage(e);
     }
@@ -77,7 +77,7 @@ const Input: React.FC<Props> = ({
   };
 
   return (
-    <div className="bg-gray-200 w-full h-fit  px-4 py-2 ">
+    <div className="bg-gray-200 w-full h-fit  px-4 py-4 ">
       <div className=" w-full h-fit ">
         <form
           onSubmit={handleSendMessage}

@@ -62,7 +62,7 @@ io.on('connection', (socket) => {
       return
     }
 
-    const recipients = chat.users.filter((user) => user._id !== newMessageReceived.sender._id);
+    const recipients = chat.users.filter((user) => user._id !== newMessageReceived.sender._id).map((user) => user._id);
 
     recipients.forEach((user) => {
       socket.in(user).emit('message received', newMessageReceived, (error) => {
@@ -82,11 +82,6 @@ io.on('connection', (socket) => {
   socket.on('stop typing', (room) => {
     socket.in(room).emit('stop typing');
   });
-
-  // socket.off('setup', (userData)=>{
-  //   console.log('USER DISCONNECTED')
-  //   Socket.leave(userData._id)
-  // })
 
   socket.on('disconnect', async () => {
     try {

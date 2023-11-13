@@ -1,67 +1,82 @@
 @import 'tailwindcss/base';
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
-@import "animate.css";
-  @import url('https://fonts.googleapis.com/css2?family=Anton&family=Great+Vibes&family=Oxygen+Mono&family=Oxygen:wght@300;400&family=Playfair+Display&display=swap');
+@import 'animate.css';
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Great+Vibes&family=Oxygen+Mono&family=Oxygen:wght@300;400&family=Playfair+Display&display=swap');
 
-*{
+* {
   box-sizing: border-box;
-
 }
 
 body {
   margin: 0;
   padding: 0;
-  font-family:   sans-serif, 'Great Vibes', cursive, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  height: 100vh;
+  width: 100%;
+  font-family: sans-serif, 'Great Vibes', cursive, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-y: hidden;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
 }
 
 /* Styles for Webkit-based browsers like Chrome and Safari */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
- body::-webkit-scrollbar {
+body::-webkit-scrollbar {
   height: 6px;
 }
 
-.custom-scrollbar::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+.custom-scrollbar::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
   background-color: #a5a5a5;
   border-radius: 3px;
 }
 
 /* Styles for Firefox */
-.custom-scrollbar, body {
+.custom-scrollbar,
+body {
   scrollbar-width: thin;
   scrollbar-color: #a5a5a5 transparent;
 }
 
 /* Styles for Microsoft Edge (Chromium-based) */
 @supports (-ms-overflow-style: none) {
-  .custom-scrollbar, body {
+  .custom-scrollbar,
+  body {
     scrollbar-width: thin;
     scrollbar-color: #a5a5a5 transparent;
   }
 }
 
-.background-gradient-left::before{
-  background: linear-gradient(138deg, transparent 0%, transparent 65%, white 50%, white);
+.background-gradient-left::before {
+  background: linear-gradient(
+    138deg,
+    transparent 0%,
+    transparent 65%,
+    white 50%,
+    white
+  );
 }
 
-.background-gradient-right::before{
-  background: linear-gradient(222deg, transparent 0%, transparent 65%, rgb(191 219 254) 50%, rgb(191 219 254));
+.background-gradient-right::before {
+  background: linear-gradient(
+    222deg,
+    transparent 0%,
+    transparent 65%,
+    rgb(191 219 254) 50%,
+    rgb(191 219 254)
+  );
 }
 
-@layer components{
+@layer components {
   .button {
-    @apply  font-bold bg-gray-300 active:bg-gray-500 hover:bg-gray-400 rounded-3xl m-2 px-3 border border-gray-500 shadow-md
+    @apply font-bold bg-gray-300 active:bg-gray-500 hover:bg-gray-400 rounded-3xl m-2 px-3 border border-gray-500 shadow-md;
   }
 }
-
-
-
-
-

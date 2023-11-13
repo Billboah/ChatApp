@@ -70,13 +70,16 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
               )}
             </div>
             <div className="flex flex-col items-start w-full ml-[10px]">
-              <p className="truncate text-left" title={chat.chatName}>
+              <p
+                className="truncate text-left capitalize"
+                title={chat.chatName}
+              >
                 {chat.chatName}
               </p>
               <div className="w-full pr-5 flex justify-between items-center">
                 {chat?.latestMessage && (
-                  <p className="truncate text-xs text-left w-full">
-                    <span className="font-semibold">
+                  <p className="truncate text-xs text-left w-full ">
+                    <span className="font-semibold capitalize">
                       {chat.latestMessage.sender._id === user?._id
                         ? 'You'
                         : chat.latestMessage.sender.username}
@@ -106,7 +109,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
               </div>
             )}
             <div className="flex flex-col items-start w-full pl-[10px]">
-              <p className="truncate text-left">
+              <p className="truncate text-left capitalize">
                 {user && getSender(user, chat?.users).username}
               </p>
 

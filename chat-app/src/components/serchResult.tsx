@@ -117,7 +117,9 @@ const SearchResult: React.FC<Props> = ({
                   )}
                 </div>
                 <div className="flex flex-col items-start w-full pr-5 ml-[10px]">
-                  <p className="truncate text-left">{user?.username}</p>
+                  <p className="truncate text-left capitalize">
+                    {user?.username}
+                  </p>
                   <p className=" text-sm text-left w-full truncate">
                     <span className="font-semibold">Email: </span>
                     <span className=" ml-[2px]  ">{user?.email}</span>

@@ -242,7 +242,7 @@ export default function chatMessages() {
             <div className="h-full w-full flex justify-start items-center ">
               <button
                 title="Back"
-                className="pr-2 md:hidden"
+                className="pr-2 sm:hidden"
                 onClick={() => (
                   dispatch(setSmallScreen(true)),
                   dispatch(setSelectedChat(null))
@@ -288,7 +288,7 @@ export default function chatMessages() {
 
                 <div className="w-[90%] min-w-[20px] px-3 flex flex-col items-start ">
                   {user && (
-                    <p className="text-lg font-extrabold">
+                    <p className="text-lg font-extrabold capitalize">
                       {selectedChat?.isGroupChat === false
                         ? getSender(user, selectedChat.users).username
                         : selectedChat?.chatName}
@@ -300,7 +300,7 @@ export default function chatMessages() {
                     isTyping === false ? (
                     <div className="w-full flex">
                       <span
-                        className=" truncate text-sm text-gray-500"
+                        className=" truncate text-sm text-gray-500 capitalize"
                         title={selectedChat?.users
                           .map((participant) =>
                             user?._id === participant._id

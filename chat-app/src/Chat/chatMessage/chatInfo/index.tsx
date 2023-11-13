@@ -246,7 +246,7 @@ function ChatInfo() {
   return (
     user &&
     selectedChat && (
-      <div className="h-full w-full flex-1 border-l border-l-gray-400  bg-gray-100">
+      <div className="h-full  w-full flex-1 flex flex-col border-l border-l-gray-400  bg-gray-100">
         <nav className="flex items-center bg-gray-200 h-[50px] w-full px-[20px] text-gray-700">
           <button className="" onClick={() => dispatch(setInfo(false))}>
             <FaTimes size={17} />
@@ -258,11 +258,11 @@ function ChatInfo() {
           )}
         </nav>
         <div className="flex flex-col h-full m-0 p-0 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar">
-          <section className="flex items-center justify-center h-fit w-full py-[30px] px-[20px]  mb-[7px] bg-gray-300">
+          <section className="flex items-center justify-center h-fit w-full px-[20px]  mb-[7px] bg-gray-300">
             {selectedChat?.isGroupChat ? (
-              <div className="h-fit w-fit flex flex-col justify-center items-center rounded-full">
+              <div className="h-fit w-fit flex flex-col justify-center items-center my-3">
                 <div
-                  className="h-full w-full inline-block rounded-full"
+                  className="h-full w-full inline-block rounded-full "
                   onMouseEnter={() => setIsHovered(true)}
                   onMouseLeave={() => setIsHovered(false)}
                   title={`${groupIconLoading ? '' : 'Change Icon'}`}
@@ -354,7 +354,7 @@ function ChatInfo() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col justify-center items-center">
+              <div className="flex flex-col justify-center items-center my-3">
                 <div className="flex justify-center items-center h-[180px] w-[180px] rounded-full border border-gray-500  bg-gray-400 ">
                   {getSender(user, selectedChat.users)?.pic ? (
                     <img
@@ -426,7 +426,7 @@ function ChatInfo() {
                         {participant._id === user?._id ? (
                           <p className="w-full  text-left ">You</p>
                         ) : (
-                          <p className="w-full  truncate text-left pr-2">
+                          <p className="w-full  truncate text-left pr-2 capitalize">
                             {participant.username}
                           </p>
                         )}
@@ -494,13 +494,13 @@ function ChatInfo() {
                           )}
                         </div>
                         <div className="flex-1 flex flex-col items-start w-full ml-[10px] border-b border-gray-400">
-                          <p className="w-[95%] truncate text-left font-semibold">
+                          <p className="w-[95%] truncate text-left font-semibold capitalize">
                             {chat.chatName}
                           </p>
                           <div className="w-[95%] flex justify-between items-center">
                             <div className="w-full flex">
                               <span
-                                className=" truncate text-sm text-gray-600"
+                                className=" truncate text-sm text-gray-600 capitalize"
                                 title={chat.users
                                   .map((participant) =>
                                     user?._id === participant._id
@@ -528,7 +528,7 @@ function ChatInfo() {
             </section>
           )}
 
-          <section className=" pb-16 bg-gray-300 h-full w-full">
+          <section className="bg-gray-300 h-full w-full">
             <div className="flex justify-between items-center text-red-500">
               {selectedChat?.isGroupChat ? (
                 <div className="w-full">

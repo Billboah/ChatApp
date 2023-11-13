@@ -156,7 +156,7 @@ const DisplayMessages: React.FC<Props> = ({
                             message.sender._id !== user?._id &&
                             index === 0 && (
                               <p
-                                className={`font-bold w-full text-red-400 text-xs truncate `}
+                                className={`font-bold w-full text-red-400 text-xs truncate  capitalize`}
                               >
                                 {message.sender.username}
                               </p>
@@ -171,9 +171,14 @@ const DisplayMessages: React.FC<Props> = ({
                                 <DoneIcon
                                   color="disabled"
                                   sx={{ fontSize: 11 }}
+                                  className="z-20"
                                 />
                               ) : (
-                                <FaRegClock color="gray" size={9} />
+                                <FaRegClock
+                                  color="gray"
+                                  size={9}
+                                  className="z-20"
+                                />
                               ))}
                           </div>
                         </div>
