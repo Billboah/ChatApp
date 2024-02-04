@@ -28,6 +28,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
     const updatedAtDate = new Date(mongoDBUpdatedAt);
     return format(updatedAtDate, 'HH:mm');
   };
+
   const formattedDateAndTime = (date: any) => {
     const today = new Date();
     const messageDate = new Date(date);
@@ -55,30 +56,30 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
         handleSelect(chat), setSearch('');
       }}
     >
-      <div className="w-full h-full flex justify-between items-center px-[20px] py-[10px]">
+      <div className="w-full h-full flex justify-between items-center  p-[10px]">
         {chat.isGroupChat ? (
-          <div className="w-[90%] flex items-center ">
-            <div className="flex justify-center items-center w-[30px] h-[30px] rounded-full bg-gray-400">
+          <div className="w-full flex items-center ">
+            <div className="flex justify-center items-center w-[40px] h-[40px] rounded-full bg-gray-400">
               {chat.pic ? (
                 <img
                   src={chat?.pic}
                   alt="group profile image"
-                  className="w-full h-full rounded-full "
+                  className="w-[40px] h-[40px] rounded-full "
                 />
               ) : (
-                <FaUserFriends color="white" size={20} />
+                <FaUserFriends color="white" size={25} />
               )}
             </div>
             <div className="flex flex-col items-start w-full ml-[10px]">
               <p
-                className="truncate text-left capitalize"
+                className="line-clamp-1 font-bold text-md text-left capitalize "
                 title={chat.chatName}
               >
                 {chat.chatName}
               </p>
-              <div className="w-full pr-5 flex justify-between items-center">
+              <div className="w-full flex justify-between items-center">
                 {chat?.latestMessage && (
-                  <p className="truncate text-xs text-left w-full ">
+                  <p className="text-xs text-left w-full line-clamp-2">
                     <span className="font-semibold capitalize">
                       {chat.latestMessage.sender._id === user?._id
                         ? 'You'
@@ -94,28 +95,28 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
             </div>
           </div>
         ) : (
-          <div className="w-[90%] flex items-center ">
+          <div className="flex items-center ">
             {user && (
-              <div className="flex justify-center items-center w-[30px] h-[30px] rounded-full bg-gray-400">
+              <div className="flex justify-center items-center w-[40px] h-[40px] rounded-full bg-gray-400">
                 {getSender(user, chat?.users).pic ? (
                   <img
                     src={getSender(user, chat?.users).pic}
                     alt="sender profile  image"
-                    className="w-full h-full rounded-full "
+                    className="w-[40px] h-[40px] rounded-full "
                   />
                 ) : (
-                  <FaUser size={20} color="white" />
+                  <FaUser size={25} color="white" />
                 )}
               </div>
             )}
             <div className="flex flex-col items-start w-full pl-[10px]">
-              <p className="truncate text-left capitalize">
+              <p className=" line-clamp-1 font-bold text-md text-left capitalize">
                 {user && getSender(user, chat?.users).username}
               </p>
 
-              <div className="w-full pr-5 flex justify-between">
+              <div className="w-full flex justify-between">
                 {chat?.latestMessage && (
-                  <p className=" text-xs text-left w-full truncate">
+                  <p className=" text-xs text-left w-full line-clamp-2">
                     {chat.latestMessage.content}
                   </p>
                 )}

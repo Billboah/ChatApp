@@ -135,7 +135,7 @@ export default function chatSidebar() {
               <img
                 src={user?.pic}
                 alt=""
-                className=" h-full w-full"
+                className=" h-full w-full rounded-full"
                 title="Profile"
               />
             ) : (

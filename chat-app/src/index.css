@@ -20,11 +20,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  height: 100%;
-  width: 100%;
-}
-
 /* Styles for Webkit-based browsers like Chrome and Safari */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

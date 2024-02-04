@@ -9,7 +9,7 @@ export interface User {
   token: string;
 }
 
-interface UserInfo {
+export interface UserInfo {
   _id: string;
   name: string;
   username: string;

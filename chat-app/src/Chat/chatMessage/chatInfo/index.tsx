@@ -84,7 +84,7 @@ function ChatInfo() {
           [removeUser]: false,
         }));
       })
-      .catch((error) => {
+      .catch((error: any) => {
         setMemberLoading((prevSelectLoading: any) => ({
           ...prevSelectLoading,
           [removeUser]: false,
@@ -105,7 +105,7 @@ function ChatInfo() {
   };
 
   //change group icon
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: { target: any }) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
       return;

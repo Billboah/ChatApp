@@ -72,11 +72,11 @@ function Chats() {
   }, []);
 
   return (
-    <div className="flex w-full h-full m-0 p-0">
+    <div className="flex w-full h-screen m-0 p-0">
       <div
         className={`${
           smallScreen ? 'block h-full w-full' : 'hidden'
-        } sm:block sm:w-1/4 sm:min-w-[300px] `}
+        } sm:block sm:w-[350px] `}
       >
         <ChatSidebar />
       </div>

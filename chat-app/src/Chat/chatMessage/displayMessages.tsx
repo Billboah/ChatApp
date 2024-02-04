@@ -104,7 +104,7 @@ const DisplayMessages: React.FC<Props> = ({
                 (message: any, index: any, messagesArray: any) => (
                   <div
                     key={message._id}
-                    className="w-full  flex justify-end items-center py-[2px] px-5"
+                    className="w-full  flex justify-end items-center py-[5px] px-5"
                   >
                     <div
                       className={`flex-1 flex ${
