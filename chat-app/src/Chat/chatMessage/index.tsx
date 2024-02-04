@@ -242,7 +242,7 @@ export default function chatMessages() {
             <div className="h-full w-full flex justify-start items-center ">
               <button
                 title="Back"
-                className="pr-2 sm:hidden"
+                className="sm:hidden"
                 onClick={() => (
                   dispatch(setSmallScreen(true)),
                   dispatch(setSelectedChat(null))
@@ -300,7 +300,7 @@ export default function chatMessages() {
                     isTyping === false ? (
                     <div className="w-full flex">
                       <span
-                        className=" truncate text-sm text-gray-500 capitalize"
+                        className=" line-clamp-1 text-sm text-gray-500 capitalize"
                         title={selectedChat?.users
                           .map((participant) =>
                             user?._id === participant._id
