@@ -113,12 +113,18 @@ export default function chatSidebar() {
   // search chat
   const filteredChats = chats?.filter(
     (item: { chatName: string; users: any[]; isGroupChat: boolean }) => {
+      const searchLowerCase = search.trim().toLowerCase();
+
       if (item.isGroupChat === true) {
-        return item.chatName.toLowerCase().includes(search.trim());
+        return item.chatName.toLowerCase().includes(searchLowerCase);
       } else {
-        return item?.users[0]._id === user?._id
-          ? item.users[1].username.toLowerCase().includes(search.trim())
-          : item.users[0].username.toLowerCase().includes(search.trim());
+        return (
+          item?.users[0]._id === user?._id
+            ? item.users[1].username
+            : item.users[0].username
+        )
+          .toLowerCase()
+          .includes(searchLowerCase);
       }
     },
   );

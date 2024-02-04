@@ -366,7 +366,7 @@ function ChatInfo() {
                     <FaUser size={100} color="white" />
                   )}
                 </div>
-                <p className="text-lg font-bold mt-[10px]">
+                <p className="text-lg font-bold mt-[10px] capitalize">
                   {selectedChat?.users[0]._id === user?._id
                     ? selectedChat?.users[1].username
                     : selectedChat?.users[0].username}
@@ -426,7 +426,7 @@ function ChatInfo() {
                         {participant._id === user?._id ? (
                           <p className="w-full  text-left ">You</p>
                         ) : (
-                          <p className="w-full  truncate text-left pr-2 capitalize">
+                          <p className="w-full  line-clamp-1 text-left capitalize">
                             {participant.username}
                           </p>
                         )}
@@ -497,10 +497,10 @@ function ChatInfo() {
                           <p className="w-[95%] truncate text-left font-semibold capitalize">
                             {chat.chatName}
                           </p>
-                          <div className="w-[95%] flex justify-between items-center">
+                          <div className="w-full flex justify-between items-center">
                             <div className="w-full flex">
                               <span
-                                className=" truncate text-sm text-gray-600 capitalize"
+                                className=" line-clamp-1 text-sm text-gray-600 capitalize"
                                 title={chat.users
                                   .map((participant) =>
                                     user?._id === participant._id

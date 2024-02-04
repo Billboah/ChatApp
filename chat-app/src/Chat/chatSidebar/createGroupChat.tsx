@@ -57,7 +57,7 @@ function CreateGroupChat() {
             'Cannot reach the server. Please check your internet connection.',
           );
         } else {
-          console.error('Error:', error.message);
+          setError( error.message);
         }
       });
   };
