@@ -108,6 +108,7 @@ function ChatInfo() {
   const handleFileChange = (e: { target: any }) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      alert('Image is not supported');
       return;
     }
 

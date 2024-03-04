@@ -37,6 +37,7 @@ function Profile() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+      setError('Image is not supported');
       return;
     }
 

@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
+import { createServer } from "http";
 import dotenv from "dotenv";
 import connectDB from "../config/db";
 import userRouter from "../routes/userRoutes";
@@ -13,6 +14,7 @@ dotenv.config();
 
 connectDB();
 const app = express();
+const httpServer = createServer(app);
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.json());
@@ -25,14 +27,10 @@ app.use("/api/message", messageRouter);
 
 const port = process.env.PORT || 5000;
 
-const server = app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
-
-const io = new Server(server, {
+const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin: "https://chatapp-amber-rho.vercel.app",
+    origin: "http://localhost:3000",
   },
 });
 
@@ -64,10 +62,15 @@ io.on("connection", (socket) => {
 
     recipients.forEach((user: string[]) => {
       socket
-        .in(user)
+        .to(user)
         .emit("message received", newMessageReceived, (error: any) => {
           if (error) {
             console.error(`Error sending message to room ${user}:`, error);
+          } else {
+            console.log(
+              "Message has been sent to the user successfully: ",
+              user
+            );
           }
         });
     });
@@ -96,4 +99,6 @@ io.on("connection", (socket) => {
   });
 });
 
-module.exports = app;
+httpServer.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});

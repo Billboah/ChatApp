@@ -69,8 +69,8 @@ function SignUp() {
     const file = fileInput.files[0];
     const reader = new FileReader();
     reader.onloadend = () => {
-      const dataURL = reader.result as string; // Explicitly cast to string
-      // Use the dataURL or send it to your server for storage
+      const dataURL = reader.result as string;
+
       setPic(dataURL);
     };
     reader.readAsDataURL(file);
@@ -221,7 +221,7 @@ function SignUp() {
           </div>
           <div className="w-full h-15 flex flex-col">
             <label htmlFor="file-input" className="">
-              Profile image
+              Profile pic
             </label>
             <input
               id="file-input"

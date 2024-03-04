@@ -97,22 +97,18 @@ export default function chatMessages() {
 
   //socket.io while typing
   const typingLogic = () => {
-    // eslint-disable-next-line prefer-const
-    let typingTimeout;
-
     if (!socketConnected) return;
+    socket.emit('typing', user, selectedChat?._id);
 
-    if (!isTyping) {
-      socket.emit('typing', user, selectedChat?._id);
-    }
-
-    clearTimeout(typingTimeout);
-
-    typingTimeout = setTimeout(() => {
-      if (isTyping === false) {
+    const typingTimeout = setTimeout(() => {
+      if (!isTyping) {
         socket.emit('stop typing', selectedChat?._id);
       }
-    }, 3000);
+    }, 5000);
+
+    return () => {
+      clearTimeout(typingTimeout);
+    };
   };
 
   const handleStopTyping = () => {
@@ -219,15 +215,15 @@ export default function chatMessages() {
   }, [selectedChat]);
 
   //add message to messages  in socket.io
-  useEffect(() => {
-    socket.on('message received', (newMessageReceived) => {
-      if (!selectedChat || selectedChat._id !== newMessageReceived.chat._id) {
-        //give notification
-        dispatch(updateChats(newMessageReceived));
-      } else {
-        setMessages([...messages, newMessageReceived]);
-      }
-    });
+  socket.on('message received', (newMessage) => {
+    console.log('this is a socket connection for recieving message');
+    console.log(newMessage);
+    if (selectedChat?._id === newMessage.chat._id) {
+      //give notification
+      setMessages([...messages, newMessage]);
+    } else {
+      dispatch(updateChats(newMessage));
+    }
   });
 
   return (
