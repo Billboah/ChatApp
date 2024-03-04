@@ -30,7 +30,7 @@ const port = process.env.PORT || 5000;
 const io = new Server(httpServer, {
   pingTimeout: 60000,
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://chatapp-amber-rho.vercel.app",
   },
 });
 
