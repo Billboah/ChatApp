@@ -90,18 +90,44 @@ export default function chatMessages() {
 
     socket.on(
       'typing',
-      (sender) => (setIsTyping(true), setTyper(sender?.username)),
+      (sender: any) => (setIsTyping(true), setTyper(sender?.username)),
     );
     socket.on('stop typing', () => (setIsTyping(false), setTyper(' ')));
+
+    //add message to messages  in socket.io
+    socket.on('message received', (newMessage: Message) => {
+      console.log('this is a socket connection for recieving message');
+      console.log(newMessage);
+      if (selectedChat?._id === newMessage.chat._id) {
+        setMessages([...messages, newMessage]);
+      } else {
+        dispatch(updateChats(newMessage));
+      }
+    });
+
+    return () => {
+      socket.off('connected');
+      socket.off('typing');
+      socket.off('stop typing');
+      socket.off('message received');
+    };
   }, []);
 
   //socket.io while typing
   const typingLogic = () => {
+    console.log(isTyping);
     if (!socketConnected) return;
-    socket.emit('typing', user, selectedChat?._id);
+    console.log('this is socket' + socketConnected);
+
+    if (!isTyping) {
+      setIsTyping(true);
+      user && setTyper(user._id);
+      socket.emit('typing', user, selectedChat?._id);
+    }
 
     const typingTimeout = setTimeout(() => {
-      if (!isTyping) {
+      if (isTyping) {
+        setIsTyping(false);
         socket.emit('stop typing', selectedChat?._id);
       }
     }, 5000);
@@ -214,17 +240,7 @@ export default function chatMessages() {
     }
   }, [selectedChat]);
 
-  //add message to messages  in socket.io
-  socket.on('message received', (newMessage) => {
-    console.log('this is a socket connection for recieving message');
-    console.log(newMessage);
-    if (selectedChat?._id === newMessage.chat._id) {
-      //give notification
-      setMessages([...messages, newMessage]);
-    } else {
-      dispatch(updateChats(newMessage));
-    }
-  });
+  console.log(isTyping);
 
   return (
     <div className="flex w-full h-full">
@@ -290,10 +306,13 @@ export default function chatMessages() {
                         : selectedChat?.chatName}
                     </p>
                   )}
-                  {selectedChat?.isGroupChat === true && isTyping === true ? (
+                  {selectedChat?.isGroupChat === true &&
+                  isTyping &&
+                  typer !== user?._id ? (
                     <div>{typer} typing...</div>
                   ) : selectedChat?.isGroupChat === true &&
-                    isTyping === false ? (
+                    (!isTyping ||
+                      (isTyping && (typer === user?._id || typer === ''))) ? (
                     <div className="w-full flex">
                       <span
                         className=" line-clamp-1 text-sm text-gray-500 capitalize"
@@ -315,7 +334,8 @@ export default function chatMessages() {
                       </span>
                     </div>
                   ) : selectedChat?.isGroupChat === false &&
-                    isTyping === true ? (
+                    isTyping === true &&
+                    typer !== user?._id ? (
                     <div>typing...</div>
                   ) : (
                     <div></div>

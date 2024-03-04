@@ -28,9 +28,8 @@ app.use("/api/message", messageRouter);
 const port = process.env.PORT || 5000;
 
 const io = new Server(httpServer, {
-  pingTimeout: 60000,
   cors: {
-    origin: "https://chatapp-amber-rho.vercel.app",
+    origin: "http://localhost:3000",
   },
 });
 
