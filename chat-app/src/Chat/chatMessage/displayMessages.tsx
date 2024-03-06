@@ -161,7 +161,12 @@ const DisplayMessages: React.FC<Props> = ({
                                 {message.sender.username}
                               </p>
                             )}
-                          <p>{message.content}</p>
+
+                          <p
+                            dangerouslySetInnerHTML={{
+                              __html: message.content,
+                            }}
+                          />
                           <div className="w-full flex justify-end items-center mt-[-3px] mr-[5px]">
                             <p className="text-[10px] text-gray-500 mr-1">
                               {timeFormat(message)}

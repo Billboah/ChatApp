@@ -34,7 +34,7 @@ const Input: React.FC<Props> = ({
     const inputMessage: any = {
       _id: generateClientId(),
       sender: user,
-      content: input,
+      content: input.replace(/\n/g, '<br />'),
       chat: selectedChat,
       delivered: false,
       updatedAt: currentTime.toISOString(),

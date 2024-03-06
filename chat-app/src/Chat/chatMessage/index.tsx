@@ -22,7 +22,8 @@ import { ClipLoading } from '../../config/ChatLoading';
 import { BACKEND_API, getSender } from '../../config/chatLogics';
 import { Message } from '../../types';
 
-const socket = io(BACKEND_API);
+// eslint-disable-next-line no-var
+var socket: any, selectedChatCompare: any;
 
 export default function chatMessages() {
   const dispatch = useDispatch();
@@ -42,6 +43,23 @@ export default function chatMessages() {
   //scrolling to the bottom automatically
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+
+  //connect to socket.io
+  useEffect(() => {
+    socket = io(BACKEND_API);
+
+    socket.emit('setup', user);
+    socket.on('connected', () => setSocketConnected(true));
+
+    socket.on('typing', (sender: any) => {
+      setIsTyping(true);
+      setTyper(sender?.username);
+    });
+    socket.on('stop typing', () => {
+      setIsTyping(false);
+      setTyper(' ');
+    });
+  }, []);
 
   const handleScroll = () => {
     if (scrollContainerRef.current && contentRef.current) {
@@ -83,41 +101,9 @@ export default function chatMessages() {
     scrollToBottom();
   }, [messages]);
 
-  //connect to socket.io
-  useEffect(() => {
-    socket.emit('setup', user);
-    socket.on('connected', () => setSocketConnected(true));
-
-    socket.on(
-      'typing',
-      (sender: any) => (setIsTyping(true), setTyper(sender?.username)),
-    );
-    socket.on('stop typing', () => (setIsTyping(false), setTyper(' ')));
-
-    //add message to messages  in socket.io
-    socket.on('message received', (newMessage: Message) => {
-      console.log('this is a socket connection for recieving message');
-      console.log(newMessage);
-      if (selectedChat?._id === newMessage.chat._id) {
-        setMessages([...messages, newMessage]);
-      } else {
-        dispatch(updateChats(newMessage));
-      }
-    });
-
-    return () => {
-      socket.off('connected');
-      socket.off('typing');
-      socket.off('stop typing');
-      socket.off('message received');
-    };
-  }, []);
-
   //socket.io while typing
   const typingLogic = () => {
-    console.log(isTyping);
     if (!socketConnected) return;
-    console.log('this is socket' + socketConnected);
 
     if (!isTyping) {
       setIsTyping(true);
@@ -172,7 +158,7 @@ export default function chatMessages() {
         }
         dispatch(updateChats(response.data));
         dispatch(setNewMessage(response.data));
-        socket.emit('new message', response.data);
+        socket.emit('send message', response.data);
         scrollToBottom;
       })
       .catch((error) => {
@@ -233,14 +219,25 @@ export default function chatMessages() {
   };
 
   useEffect(() => {
-    if (selectedChat) {
-      displayMessages();
-    } else {
-      return;
-    }
+    displayMessages();
+
+    selectedChatCompare = selectedChat;
   }, [selectedChat]);
 
-  console.log(isTyping);
+  //receeve message from socket.io
+  useEffect(() => {
+    socket.on('received message', (messageReceived: Message) => {
+      console.log(messageReceived);
+      if (
+        !selectedChatCompare ||
+        selectedChatCompare?._id !== messageReceived.chat._id
+      ) {
+        dispatch(updateChats(messageReceived));
+      } else {
+        setMessages([...messages, messageReceived]);
+      }
+    });
+  });
 
   return (
     <div className="flex w-full h-full">

@@ -28,8 +28,9 @@ app.use("/api/message", messageRouter);
 const port = process.env.PORT || 5000;
 
 const io = new Server(httpServer, {
+  pingTimeout: 60000,
   cors: {
-    origin: "http://localhost:3000",
+    origin: "https://chatapp-amber-rho.vercel.app",
   },
 });
 
@@ -41,6 +42,7 @@ io.on("connection", (socket) => {
     userId = userData?._id;
     socket.join(userData?.id);
     socket.emit("connected");
+    console.log(`${userId} has log in and join a private room`);
   });
 
   socket.on("join chat", (room) => {
@@ -48,30 +50,15 @@ io.on("connection", (socket) => {
     console.log(userId + " " + "Joined Room:" + " " + room);
   });
 
-  socket.on("new message", (newMessageReceived) => {
-    const chat = newMessageReceived.chat;
+  socket.on("send message", (messageReceived) => {
+    const chat = messageReceived.chat;
 
-    if (!chat.users) {
-      return;
-    }
+    if (!chat.users) return;
 
-    const recipients = chat.users
-      .filter((user) => user._id !== newMessageReceived.sender._id)
-      .map((user) => user._id);
+    chat.users.forEach((user: any) => {
+      if (user._id === messageReceived.sender._id) return;
 
-    recipients.forEach((user: string[]) => {
-      socket
-        .to(user)
-        .emit("message received", newMessageReceived, (error: any) => {
-          if (error) {
-            console.error(`Error sending message to room ${user}:`, error);
-          } else {
-            console.log(
-              "Message has been sent to the user successfully: ",
-              user
-            );
-          }
-        });
+      socket.in(user._id).emit("received message", messageReceived);
     });
   });
 
