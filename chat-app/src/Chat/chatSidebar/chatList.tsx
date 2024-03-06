@@ -86,9 +86,12 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
                         : chat.latestMessage.sender.username}
                       :{' '}
                     </span>
-                    <span className=" ml-[2px] ">
-                      {chat.latestMessage.content}
-                    </span>
+                    <span
+                      className=" ml-[2px] "
+                      dangerouslySetInnerHTML={{
+                        __html: chat.latestMessage.content,
+                      }}
+                    />
                   </p>
                 )}
               </div>
@@ -116,9 +119,12 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
 
               <div className="w-full flex justify-between">
                 {chat?.latestMessage && (
-                  <p className=" text-xs text-left w-full line-clamp-2">
-                    {chat.latestMessage.content}
-                  </p>
+                  <p
+                    className=" text-xs text-left w-full line-clamp-2"
+                    dangerouslySetInnerHTML={{
+                      __html: chat.latestMessage.content,
+                    }}
+                  />
                 )}
               </div>
             </div>
