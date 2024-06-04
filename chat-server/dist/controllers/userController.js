@@ -20,7 +20,7 @@ const signupController = (req, res) => __awaiter(void 0, void 0, void 0, functio
     try {
         if (!name || !email || !password || !username || !confirmPassword) {
             res.status(400);
-            throw new Error('Please fill all the marked feilds');
+            throw new Error("Please fill all the marked feilds");
         }
         const userExists = yield userModels_1.User.findOne({ $or: [{ username }, { email }] });
         if (userExists) {
@@ -28,7 +28,12 @@ const signupController = (req, res) => __awaiter(void 0, void 0, void 0, functio
             throw new Error("User already exists");
         }
         const user = yield userModels_1.User.create({
-            name, email, username, password, pic, confirmPassword
+            name,
+            email,
+            username,
+            password,
+            pic,
+            confirmPassword,
         });
         if (user) {
             res.status(201).json({
@@ -44,7 +49,7 @@ const signupController = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         else {
             res.status(400);
-            throw new Error('Failed to create the User');
+            throw new Error("Failed to create the User");
         }
     }
     catch (error) {
@@ -57,9 +62,11 @@ const signInController = (req, res) => __awaiter(void 0, void 0, void 0, functio
     try {
         if (!password || !name) {
             res.status(400);
-            throw new Error('Please enter all the feilds');
+            throw new Error("Please enter all the feilds");
         }
-        const user = yield userModels_1.User.findOne({ $or: [{ username: name }, { email: name },] });
+        const user = yield userModels_1.User.findOne({
+            $or: [{ username: name }, { email: name }],
+        });
         if (user && (yield user.comparePassword(password))) {
             res.status(201).json({
                 _id: user._id,
@@ -74,7 +81,7 @@ const signInController = (req, res) => __awaiter(void 0, void 0, void 0, functio
         }
         else {
             res.status(400);
-            throw new Error('Invalid user name or email or password ');
+            throw new Error("Invalid user name or email or password ");
         }
     }
     catch (error) {
@@ -85,12 +92,14 @@ exports.signInController = signInController;
 const searchUsersController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const keyword = req.query.search;
     try {
-        const users = yield userModels_1.User.find(keyword ? {
-            $or: [
-                { username: { $regex: keyword, $options: 'i' } },
-                { email: { $regex: keyword, $options: 'i' } }
-            ]
-        } : {}).find({ _id: { $ne: req.user._id } });
+        const users = yield userModels_1.User.find(keyword
+            ? {
+                $or: [
+                    { username: { $regex: keyword, $options: "i" } },
+                    { email: { $regex: keyword, $options: "i" } },
+                ],
+            }
+            : {}).find({ _id: { $ne: req.user._id } });
         res.json(users);
     }
     catch (error) {
@@ -109,7 +118,7 @@ const changeUserName = (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
         if (!updatedUser) {
             res.status(400);
-            throw new Error('User Not Found');
+            throw new Error("User Not Found");
         }
         res.status(201).json({
             _id: updatedUser._id,
@@ -139,7 +148,7 @@ const changePicController = (req, res) => __awaiter(void 0, void 0, void 0, func
         });
         if (!updatedUser) {
             res.status(400);
-            throw new Error('User Not Found');
+            throw new Error("User Not Found");
         }
         res.status(201).json({
             _id: updatedUser._id,
@@ -158,8 +167,7 @@ const changePicController = (req, res) => __awaiter(void 0, void 0, void 0, func
 });
 exports.changePicController = changePicController;
 const updateSelectedChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { selectedChat } = req.body;
-    const selectedChatId = selectedChat ? selectedChat._id : null;
+    const { selectedChatId } = req.body;
     const userId = req.user._id;
     try {
         if (userId) {
