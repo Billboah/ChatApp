@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FaAngleDown,
   FaArrowLeft,
@@ -8,60 +8,48 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { setInfo, setSmallScreen } from '../../state/reducers/screen';
 import {
-  setNewMessage,
   setSelectedChat,
-  updateChats,
+  setMessagesLoading,
+  updateMessageChats,
+  setError,
+  setHasMore,
+  setNewMessage,
 } from '../../state/reducers/chat';
 import ChatInfo from './chatInfo';
-import DisplayMessages from './displayMessages';
+import Messages from './messages';
 import Input from './input';
-import axios, { AxiosRequestConfig } from 'axios';
-import { io } from 'socket.io-client';
 import { RootState } from '../../state/reducers';
 import { ClipLoading } from '../../config/ChatLoading';
-import { BACKEND_API, getSender } from '../../config/chatLogics';
-import { Message } from '../../types';
+import { BACKEND_API, getSender, socket } from '../../config/chatLogics';
+import axios from 'axios';
+import { User } from '../../types';
 
-// eslint-disable-next-line no-var
-var socket: any, selectedChatCompare: any;
-
-export default function chatMessages() {
+const chatMessages: React.FC = () => {
   const dispatch = useDispatch();
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const { info } = useSelector((state: RootState) => state.screen);
+  const { messageChats } = useSelector((state: RootState) => state.chat);
   const { user } = useSelector((state: RootState) => state.auth);
-  const [messageLoadingError, setMessageLoadingError] = useState<{
-    [key: string]: boolean;
-  }>({});
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messagesLoading } = useSelector((state: RootState) => state.chat);
   const [socketConnected, setSocketConnected] = useState(false);
-  const [loadingMessages, setLoadingMessages] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [typer, setTyper] = useState('');
-  const [scrollButton, setScrollButton] = useState(false);
-
-  //scrolling to the bottom automatically
+  const [typer, setTyper] = useState<User | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const previousScrollHeightRef = useRef<number>(0);
+  const [scrollButton, setScrollButton] = useState(false);
+  const [typingTimeoutId, setTypingTimeoutId] = useState<NodeJS.Timeout | null>(
+    null,
+  );
+  const hasMoreMessages = messageChats.find(
+    (chat: any) => chat._id === selectedChat?._id,
+  )?.hasMoreMessages;
 
-  //connect to socket.io
-  useEffect(() => {
-    socket = io(BACKEND_API);
+  const messageChat = messageChats.find(
+    (chat: any) => chat._id === selectedChat?._id,
+  );
 
-    socket.emit('setup', user);
-    socket.on('connected', () => setSocketConnected(true));
-
-    socket.on('typing', (sender: any) => {
-      setIsTyping(true);
-      setTyper(sender?.username);
-    });
-    socket.on('stop typing', () => {
-      setIsTyping(false);
-      setTyper(' ');
-    });
-  }, []);
-
-  const handleScroll = () => {
+  const handleScrollDown = () => {
     if (scrollContainerRef.current && contentRef.current) {
       const isAtBottom =
         scrollContainerRef.current.scrollTop +
@@ -78,12 +66,15 @@ export default function chatMessages() {
 
   useEffect(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.addEventListener('scroll', handleScroll);
+      scrollContainerRef.current.addEventListener('scroll', handleScrollDown);
     }
 
     return () => {
       if (scrollContainerRef.current) {
-        scrollContainerRef.current.removeEventListener('scroll', handleScroll);
+        scrollContainerRef.current.removeEventListener(
+          'scroll',
+          handleScrollDown,
+        );
       }
     };
   }, [selectedChat]);
@@ -97,147 +88,176 @@ export default function chatMessages() {
     }
   };
 
+  //api for messages of a chat
+  const fetchMessages = async (lastId: string) => {
+    const chatId = selectedChat?._id;
+
+    dispatch(setMessagesLoading(true));
+    const config = {
+      params: { lastMessageId: lastId },
+      headers: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    };
+
+    if (chatId && !messagesLoading && hasMoreMessages) {
+      try {
+        const response = await axios.get(
+          `${BACKEND_API}/api/message/${chatId}`,
+          config,
+        );
+        dispatch(setMessagesLoading(false));
+        if (response.data.regularMessages.length > 0) {
+          dispatch(
+            updateMessageChats({
+              chatId: chatId,
+              regularMessages: response.data.regularMessages,
+              unreadMessages: [],
+            }),
+          );
+        } else {
+          dispatch(setHasMore({ hasMore: false, chatId: chatId }));
+        }
+      } catch (error: any) {
+        if (error.response) {
+          dispatch(setMessagesLoading(false));
+          dispatch(setError(error.response.data.error));
+        } else if (error.request) {
+          dispatch(setMessagesLoading(false));
+          dispatch(setError('Cannot reach the server.'));
+        } else {
+          dispatch(setMessagesLoading(false));
+          dispatch(setError(error.message));
+        }
+      }
+    }
+  };
+
+  // Attach a scroll event listener
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const handleScroll = () => {
+      if (
+        scrollContainerRef.current &&
+        scrollContainerRef.current.scrollTop === 0
+      ) {
+        previousScrollHeightRef.current =
+          scrollContainerRef.current.scrollHeight;
+        if (hasMoreMessages) {
+          fetchMessages(messageChat?.lastMessageId);
+        }
+      }
+    };
 
-  //socket.io while typing
-  const typingLogic = () => {
-    if (!socketConnected) return;
-
-    if (!isTyping) {
-      setIsTyping(true);
-      user && setTyper(user._id);
-      socket.emit('typing', user, selectedChat?._id);
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
     }
 
-    const typingTimeout = setTimeout(() => {
-      if (isTyping) {
-        setIsTyping(false);
-        socket.emit('stop typing', selectedChat?._id);
-      }
-    }, 5000);
-
     return () => {
-      clearTimeout(typingTimeout);
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
     };
-  };
-
-  const handleStopTyping = () => {
-    socket.emit('stop typing', selectedChat?._id);
-  };
-
-  //send a message
-  const sendMessage = (message: Message) => {
-    setMessages([...messages, message]);
-
-    const config: AxiosRequestConfig<any> = {
-      headers: {
-        Authorization: `Bearer ${user?.token}`,
-      },
-    };
-
-    socket.emit('stop typing', selectedChat?._id);
-    axios
-      .post(
-        `${BACKEND_API}/api/message/`,
-        { chatId: selectedChat?._id, content: message.content },
-        config,
-      )
-      .then((response) => {
-        const messageIndex = messages.findIndex(
-          (msg) => msg._id === message._id,
-        );
-
-        if (messageIndex !== -1) {
-          const updatedMessages = [...messages];
-          updatedMessages[messageIndex] = response.data;
-          setMessages(updatedMessages);
-        } else {
-          setMessages([...messages, response.data]);
-        }
-        dispatch(updateChats(response.data));
-        dispatch(setNewMessage(response.data));
-        socket.emit('send message', response.data);
-        scrollToBottom;
-      })
-      .catch((error) => {
-        if (error.response) {
-          setMessageLoadingError((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [message._id]: true,
-          }));
-          console.error('Server error:', error.response.data.error);
-        } else if (error.request) {
-          alert(
-            'Cannot reach the server. Please check your internet connection.',
-          );
-          setMessageLoadingError((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [message._id]: true,
-          }));
-        } else {
-          console.error('Error:', error.message);
-          setMessageLoadingError((prevSelectLoading: any) => ({
-            ...prevSelectLoading,
-            [message._id]: true,
-          }));
-        }
-      });
-  };
-
-  //display messages with api
-  const displayMessages = () => {
-    const chatId = selectedChat?._id;
-    const config: AxiosRequestConfig<any> = {
-      headers: {
-        Authorization: `Bearer ${user?.token}`,
-      },
-    };
-    setLoadingMessages(true);
-    axios
-      .get(`${BACKEND_API}/api/message/${chatId}`, config)
-      .then((response) => {
-        setMessages(response.data);
-        setLoadingMessages(false);
-        socket.emit('join chat', selectedChat && selectedChat._id);
-      })
-      .catch((error) => {
-        if (error.response) {
-          setLoadingMessages(false);
-          console.error('Server error:', error.response.data.error);
-        } else if (error.request) {
-          setLoadingMessages(false);
-          alert(
-            'Cannot reach the server. Please check your internet connection.',
-          );
-        } else {
-          setLoadingMessages(false);
-          console.error('Error:', error.message);
-        }
-      });
-  };
+  }, [messagesLoading, hasMoreMessages]);
 
   useEffect(() => {
-    displayMessages();
+    if (scrollContainerRef.current && previousScrollHeightRef.current) {
+      const newScrollHeight = scrollContainerRef.current.scrollHeight;
+      scrollContainerRef.current.scrollTop =
+        newScrollHeight - previousScrollHeightRef.current;
+    }
+  }, [messageChat?.regularMessages]);
 
-    selectedChatCompare = selectedChat;
+  //connect to socket.io
+  useEffect(() => {
+    if (!user) return;
+
+    socket.emit('user connected', user?._id);
+
+    const handleConnected = () => {
+      setSocketConnected(true);
+    };
+
+    socket.on('connected', handleConnected);
+
+    return () => {
+      socket.off('connected', handleConnected);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    selectedChat && socket.emit('join chat', selectedChat._id);
   }, [selectedChat]);
+
+  useEffect(() => {
+    if (!user) return;
+    const handleTyping = (sender: any) => {
+      setIsTyping(true);
+      setTyper(sender);
+    };
+
+    const handleStopTyping = () => {
+      setIsTyping(false);
+      setTyper(null);
+    };
+
+    socket.on('typing', handleTyping);
+    socket.on('stop typing', handleStopTyping);
+
+    return () => {
+      socket.off('typing', handleTyping);
+      socket.off('stop typing', handleStopTyping);
+    };
+  }, [socket, user]);
 
   //receeve message from socket.io
   useEffect(() => {
-    socket.on('received message', (messageReceived: Message) => {
-      console.log(messageReceived);
-      if (
-        !selectedChatCompare ||
-        selectedChatCompare?._id !== messageReceived.chat._id
-      ) {
-        dispatch(updateChats(messageReceived));
-      } else {
-        setMessages([...messages, messageReceived]);
+    const handleMessageReceived = (messageReceived: any) => {
+      dispatch(
+        setNewMessage({
+          tempId: messageReceived._id,
+          message: messageReceived,
+        }),
+      );
+    };
+
+    socket.on('received message', handleMessageReceived);
+
+    return () => {
+      socket.off('received message', handleMessageReceived);
+    };
+  }, [socket, user]);
+
+  //socket.io while typing
+  const typingLogic = useCallback(() => {
+    if (!socketConnected || !user || !selectedChat) return;
+
+    if (!isTyping) {
+      setIsTyping(true);
+      setTyper(user);
+      socket.emit('typing', user, selectedChat._id);
+    }
+
+    if (typingTimeoutId) {
+      clearTimeout(typingTimeoutId);
+    }
+
+    const timeoutId = setTimeout(() => {
+      if (isTyping) {
+        setIsTyping(false);
+        setTyper(null);
+        socket.emit('stop typing', selectedChat._id);
       }
-    });
-  });
+    }, 7000);
+
+    setTypingTimeoutId(timeoutId);
+  }, [socket, socketConnected, user, selectedChat, isTyping, typingTimeoutId]);
+
+  const handleStopTyping = useCallback(() => {
+    if (selectedChat) {
+      socket.emit('stop typing', selectedChat._id);
+    }
+  }, [socket, selectedChat]);
 
   return (
     <div className="flex w-full h-full">
@@ -251,11 +271,11 @@ export default function chatMessages() {
             <div className="h-full w-full flex justify-start items-center ">
               <button
                 title="Back"
-                className="sm:hidden"
-                onClick={() => (
+                className="md:hidden"
+                onClick={() => {
                   dispatch(setSmallScreen(true)),
-                  dispatch(setSelectedChat(null))
-                )}
+                    dispatch(setSelectedChat(null));
+                }}
               >
                 <FaArrowLeft />
                 <p className="sr-only">Back</p>
@@ -305,11 +325,12 @@ export default function chatMessages() {
                   )}
                   {selectedChat?.isGroupChat === true &&
                   isTyping &&
-                  typer !== user?._id ? (
-                    <div>{typer} typing...</div>
+                  typer?._id !== user?._id ? (
+                    <div>{typer?.username} typing...</div>
                   ) : selectedChat?.isGroupChat === true &&
                     (!isTyping ||
-                      (isTyping && (typer === user?._id || typer === ''))) ? (
+                      (isTyping &&
+                        (typer?._id === user?._id || typer === null))) ? (
                     <div className="w-full flex">
                       <span
                         className=" line-clamp-1 text-sm text-gray-500 capitalize"
@@ -332,7 +353,7 @@ export default function chatMessages() {
                     </div>
                   ) : selectedChat?.isGroupChat === false &&
                     isTyping === true &&
-                    typer !== user?._id ? (
+                    typer?._id !== user?._id ? (
                     <div>typing...</div>
                   ) : (
                     <div></div>
@@ -344,13 +365,13 @@ export default function chatMessages() {
         )}
         {selectedChat && (
           <div
-            className="h-full w-full flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar"
+            className="h-full w-full flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-hide custom-scrollbar"
             ref={scrollContainerRef}
           >
             {scrollButton && (
               <button
                 onClick={scrollToBottom}
-                className="rounded-full fixed bottom-[55px] right-[15px] p-2 bg-black opacity-50 z-30 border border-inherit shadow-md"
+                className="rounded-full fixed bottom-[65px] right-[15px] p-2 bg-black opacity-50 z-30 border border-inherit shadow-md"
                 title="Move to the latest message"
                 aria-label="view latest message"
                 name="scrollToButton"
@@ -358,23 +379,20 @@ export default function chatMessages() {
                 <FaAngleDown color="white" />
               </button>
             )}
-            {loadingMessages ? (
-              <div className="w-full h-full flex justify-center items-start py-10">
-                <ClipLoading size={30} />
+            {messagesLoading && (
+              <div className="w-full h-fit flex justify-center items-start py-1">
+                <ClipLoading size={25} />
                 <p className="ml-2">Loading Messages...</p>
               </div>
-            ) : (
-              <DisplayMessages
-                messageLoadingError={messageLoadingError}
-                messages={messages}
-                contentRef={contentRef}
-              />
             )}
+            <Messages
+              contentRef={contentRef}
+              scrollContainerRef={scrollContainerRef}
+            />
           </div>
         )}
         {selectedChat && (
           <Input
-            sendMessage={sendMessage}
             typingLogic={typingLogic}
             handleStopTyping={handleStopTyping}
           />
@@ -388,4 +406,6 @@ export default function chatMessages() {
       {info && <ChatInfo />}
     </div>
   );
-}
+};
+
+export default chatMessages;

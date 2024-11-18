@@ -1,38 +1,45 @@
 import React, { ChangeEvent, useState } from 'react';
 import { FaMicrophone } from 'react-icons/fa';
 import SendIcon from '@mui/icons-material/Send';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../state/reducers';
 import { v4 as uuidv4 } from 'uuid';
 import { Message } from '../../types';
+import {
+  setError,
+  setMessageError,
+  setNewMessage,
+} from '../../state/reducers/chat';
+import axios from 'axios';
+import { BACKEND_API, socket } from '../../config/chatLogics';
 
 type Props = {
-  sendMessage: (message: Message) => void;
   typingLogic: () => void;
   handleStopTyping: () => void;
 };
 
-const Input: React.FC<Props> = ({
-  sendMessage,
-  typingLogic,
-  handleStopTyping,
-}) => {
+const Input: React.FC<Props> = ({ typingLogic, handleStopTyping }) => {
   const { selectedChat } = useSelector((state: RootState) => state.chat);
   const { user } = useSelector((state: RootState) => state.auth);
   const [input, setInput] = useState('');
+  const dispatch = useDispatch();
 
   function generateClientId() {
     return uuidv4();
   }
 
-  //send message
-  const handleSendMessage = (e: any) => {
+  //send a message
+  const sendMessage = (e: React.FormEvent<HTMLFormElement>) => {
+    //socket.emit('stop typing', selectedChat?._id);
+
     e.preventDefault();
 
     const currentTime = new Date();
 
+    const tempId = generateClientId();
+
     const inputMessage: any = {
-      _id: generateClientId(),
+      _id: tempId,
       sender: user,
       content: input.replace(/\n/g, '<br />'),
       chat: selectedChat,
@@ -40,8 +47,43 @@ const Input: React.FC<Props> = ({
       updatedAt: currentTime.toISOString(),
     };
 
+    dispatch(setNewMessage({ tempId: tempId, message: inputMessage }));
+
+    const config = {
+      headers: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    };
+
+    socket.emit('stop typing', selectedChat?._id);
+
     if (input.trim() !== '') {
-      sendMessage(inputMessage);
+      axios
+        .post(
+          `${BACKEND_API}/api/message/`,
+          { chatId: selectedChat?._id, content: inputMessage.content },
+          config,
+        )
+        .then((response) => {
+          dispatch(setNewMessage({ tempId, message: response.data }));
+          socket.emit('send message', response.data);
+        })
+        .catch((error) => {
+          if (error.response) {
+            dispatch(setMessageError({ id: inputMessage._id, hasError: true }));
+            dispatch(setError(error.response.data.error));
+          } else if (error.request) {
+            dispatch(
+              setError(
+                'Cannot reach the server. Please check your internet connection.',
+              ),
+            );
+            dispatch(setMessageError({ id: inputMessage._id, hasError: true }));
+          } else {
+            dispatch(setError(error.message));
+            dispatch(setMessageError({ id: tempId, hasError: true }));
+          }
+        });
       setInput('');
       resetTextareaHeight();
     }
@@ -51,7 +93,7 @@ const Input: React.FC<Props> = ({
   const handleKeyPress = (e: any) => {
     if (window.innerWidth > 750 && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSendMessage(e);
+      sendMessage(e);
     }
   };
 
@@ -72,7 +114,6 @@ const Input: React.FC<Props> = ({
     textarea.style.height = `${textarea.scrollHeight}px`;
     textarea.style.maxHeight = '120px';
 
-    //handle typing logic
     typingLogic();
   };
 
@@ -80,7 +121,7 @@ const Input: React.FC<Props> = ({
     <div className="bg-gray-200 w-full h-fit  px-4 py-4 ">
       <div className=" w-full h-fit ">
         <form
-          onSubmit={handleSendMessage}
+          onSubmit={sendMessage}
           className="flex justify-between items-end w-full h-fit p-0"
         >
           <textarea

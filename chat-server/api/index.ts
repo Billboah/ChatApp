@@ -8,11 +8,11 @@ import userRouter from "../routes/userRoutes";
 import chatRouter from "../routes/chatRoutes";
 import messageRouter from "../routes/messageRoute";
 import { Server } from "socket.io";
-import { User } from "../models/userModels";
 
 dotenv.config();
 
 connectDB();
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -35,20 +35,30 @@ const io = new Server(httpServer, {
   },
 });
 
+const users = new Map();
+
 io.on("connection", (socket) => {
   console.log("Connected to socket.io");
-  var userId: string;
 
-  socket.on("setup", (userData) => {
-    userId = userData?._id;
-    socket.join(userData?.id);
+  socket.on("user connected", (userId) => {
+    if (users.has(userId)) {
+      const previousSocketId = users.get(userId);
+      io.sockets.sockets.get(previousSocketId)?.disconnect(); // Disconnect the previous socket
+    }
+    users.set(userId, socket.id);
     socket.emit("connected");
-    console.log(`${userId} has log in and join a private room`);
+  });
+
+  socket.on("disconnect", () => {
+    users.forEach((id, userId) => {
+      if (id === socket.id) {
+        users.delete(userId);
+      }
+    });
   });
 
   socket.on("join chat", (room) => {
     socket.join(room);
-    console.log(userId + " " + "Joined Room:" + " " + room);
   });
 
   socket.on("send message", (messageReceived) => {
@@ -59,32 +69,20 @@ io.on("connection", (socket) => {
     chat.users.forEach((user: any) => {
       if (user._id === messageReceived.sender._id) return;
 
-      socket.in(user._id).emit("received message", messageReceived);
+      const recipientSocketId = users.get(user._id);
+
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("received message", messageReceived);
+      }
     });
   });
 
   socket.on("typing", (sender, room) => {
-    socket.in(room).emit("typing", sender);
+    socket.to(room).emit("typing", sender);
   });
 
   socket.on("stop typing", (room) => {
-    socket.in(room).emit("stop typing");
-  });
-
-  socket.on("disconnect", async () => {
-    const userId = socket.handshake.query.userId;
-    if (!userId) return;
-    try {
-      await User.findByIdAndUpdate(
-        userId,
-        {
-          $set: { selectedChat: null },
-        },
-        { new: true }
-      );
-    } catch (error: any) {
-      console.log({ error: error.message });
-    }
+    socket.to(room).emit("stop typing");
   });
 });
 

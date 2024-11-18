@@ -10,7 +10,7 @@ import {
 import { useDispatch, useSelector } from 'react-redux';
 import { setInfo } from '../../../state/reducers/screen';
 import axios, { AxiosRequestConfig } from 'axios';
-import { setChatChange, setSelectedChat } from '../../../state/reducers/chat';
+import { setError, setSelectedChat } from '../../../state/reducers/chat';
 import AddParticipant from './addParticipant';
 import { RootState } from '../../../state/reducers';
 import { ClipLoading, FadeLoading } from '../../../config/ChatLoading';
@@ -77,7 +77,6 @@ function ChatInfo() {
         config,
       )
       .then((response) => {
-        dispatch(setChatChange(true));
         dispatch(setSelectedChat(response.data));
         setMemberLoading((prevSelectLoading: any) => ({
           ...prevSelectLoading,
@@ -91,15 +90,15 @@ function ChatInfo() {
         }));
         if (error.response) {
           setCommonGroupLoading(false);
-          console.error('Server error:', error.response.data.error);
+          dispatch(setError( error.response.data.error))
         } else if (error.request) {
           setCommonGroupLoading(false);
-          alert(
+          dispatch(setError(
             'Cannot reach the server. Please check your internet connection and refresh the page.',
-          );
+          ))
         } else {
           setCommonGroupLoading(false);
-          console.error('Error:', error.message);
+          dispatch(setError( error.message))
         }
       });
   };
@@ -108,7 +107,7 @@ function ChatInfo() {
   const handleFileChange = (e: { target: any }) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-      alert('Image is not supported');
+      dispatch(setError('Image is not supported'))
       return;
     }
 
@@ -130,7 +129,6 @@ function ChatInfo() {
           config,
         )
         .then((response) => {
-          dispatch(setChatChange(true));
           dispatch(setSelectedChat(response.data));
           setNameEdit(false);
           setGroupIconLoading(false);
@@ -139,15 +137,15 @@ function ChatInfo() {
           setGroupIconLoading(false);
           if (error.response) {
             setCommonGroupLoading(false);
-            console.error('Server error:', error.response.data.error);
+            dispatch(setError( error.response.data.error))
           } else if (error.request) {
             setCommonGroupLoading(false);
-            alert(
+            dispatch(setError(
               'Cannot reach the server. Please check your internet connection and refresh the page.',
-            );
+            ))
           } else {
             setCommonGroupLoading(false);
-            console.error('Error:', error.message);
+            dispatch(setError( error.message))
           }
         });
     };
@@ -176,7 +174,6 @@ function ChatInfo() {
           config,
         )
         .then((response) => {
-          dispatch(setChatChange(true));
           dispatch(setSelectedChat(response.data));
           setNameEdit(false);
           setGroupNameLoading(false);
@@ -185,15 +182,15 @@ function ChatInfo() {
           setGroupNameLoading(false);
           if (error.response) {
             setCommonGroupLoading(false);
-            console.error('Server error:', error.response.data.error);
+            dispatch(setError( error.response.data.error))
           } else if (error.request) {
             setCommonGroupLoading(false);
-            alert(
+            dispatch(setError(
               'Cannot reach the server. Please check your internet connection and refresh the page.',
-            );
+            ))
           } else {
             setCommonGroupLoading(false);
-            console.error('Error:', error.message);
+            dispatch(setError( error.message))
           }
         });
     }
@@ -226,15 +223,15 @@ function ChatInfo() {
         .catch((error) => {
           if (error.response) {
             setCommonGroupLoading(false);
-            console.error('Server error:', error.response.data.error);
+            dispatch(setError( error.response.data.error))
           } else if (error.request) {
             setCommonGroupLoading(false);
-            alert(
+            dispatch(setError(
               'Cannot reach the server. Please check your internet connection and refresh the page.',
-            );
+            ))
           } else {
             setCommonGroupLoading(false);
-            console.error('Error:', error.message);
+            dispatch(setError( error.message))
           }
         });
     }

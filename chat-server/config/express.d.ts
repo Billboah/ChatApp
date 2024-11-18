@@ -1,4 +1,5 @@
 import { Request } from "express";
+import { ParsedQs } from "qs";
 
 // Extend the Request type
 export interface CustomRequest extends Request {
@@ -11,6 +12,8 @@ export interface CustomRequest extends Request {
     unreadMessages: any[];
     selectedChat: any;
   };
+  limit: number;
+  page: number;
 }
 
 export interface user {

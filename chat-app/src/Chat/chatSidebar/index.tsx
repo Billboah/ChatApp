@@ -3,9 +3,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FaPlus, FaSearch, FaUser } from 'react-icons/fa';
 import axios, { AxiosRequestConfig } from 'axios';
 import {
-  setChatChange,
   setChats,
+  setError,
   setSelectedChat,
+  updateChat,
 } from '../../state/reducers/chat';
 import {
   setNewGroup,
@@ -20,11 +21,14 @@ import ChatList from './chatList';
 import { Chat, User } from '../../types';
 import { SkeletonLoading } from '../../config/ChatLoading';
 
-export default function chatSidebar() {
+export default function chatSidebar({
+  changeSelectedChat,
+}: {
+  changeSelectedChat: (selectedChatId: string | null) => void;
+}) {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { profile } = useSelector((state: RootState) => state.screen);
-  const { chatChange } = useSelector((state: RootState) => state.chat);
   const { chats } = useSelector((state: RootState) => state.chat);
   const [selectLoading, setSelectLoading] = useState<{
     [key: string]: boolean;
@@ -33,7 +37,7 @@ export default function chatSidebar() {
   const [chatsLoading, setChatsLoading] = useState(false);
 
   //display chats
-  const displayChats = () => {
+  useEffect(() => {
     setChatsLoading(true);
     const config: AxiosRequestConfig<any> = {
       headers: {
@@ -45,28 +49,23 @@ export default function chatSidebar() {
       .get(`${BACKEND_API}/api/chat`, config)
       .then((response) => {
         dispatch(setChats(response.data));
-        dispatch(setChatChange(false));
         setChatsLoading(false);
       })
       .catch((error) => {
         if (error.response) {
           setChatsLoading(false);
-          console.error('Server error:', error.response.data.error);
+          dispatch(setError( error.response.data.error))
         } else if (error.request) {
           setChatsLoading(false);
-          alert(
+          dispatch(setError(
             'Cannot reach the server. Please check your internet connection and refresh the page.',
-          );
+          ))
         } else {
           setChatsLoading(false);
-          console.error('Error:', error.message);
+          dispatch(setError( error.message))
         }
       });
-  };
-
-  useEffect(() => {
-    displayChats();
-  }, [chatChange === true]);
+  }, []);
 
   //select chat
   const accessChat = (userInfo: User) => {
@@ -84,9 +83,9 @@ export default function chatSidebar() {
     axios
       .post(`${BACKEND_API}/api/chat`, { userId }, config)
       .then((response) => {
-        dispatch(setSelectedChat(response.data.chat));
+        dispatch(setSelectedChat(response.data));
+        dispatch(updateChat(response.data));
         dispatch(setSmallScreen(false));
-        dispatch(setChatChange(true));
         setSelectLoading((prevSelectLoading: any) => ({
           ...prevSelectLoading,
           [userId]: false,
@@ -99,13 +98,13 @@ export default function chatSidebar() {
           [userId]: false,
         }));
         if (error.response) {
-          console.error('Server error:', error.response.data.error);
+          dispatch(setError(error.response.data.error))
         } else if (error.request) {
-          alert(
+          dispatch(setError(
             'Cannot reach the server. Please check your internet connection.',
-          );
+          ))
         } else {
-          console.error('Error:', error.message);
+          dispatch(setError( error.message))
         }
       });
   };
@@ -220,7 +219,7 @@ export default function chatSidebar() {
         }
          `}
       >
-        <Profile />
+        <Profile changeSelectedChat={changeSelectedChat} />
       </div>
     </div>
   );

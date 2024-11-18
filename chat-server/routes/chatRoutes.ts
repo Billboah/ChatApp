@@ -23,3 +23,4 @@ router.put('/groupremove', authenticate, removeMemberController);
 router.put('/groupadd', authenticate, addMemberController);
 
 export default router;
+ 

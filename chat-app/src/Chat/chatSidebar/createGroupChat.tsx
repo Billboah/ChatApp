@@ -2,8 +2,8 @@ import axios, { AxiosRequestConfig } from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaCamera, FaTimes } from 'react-icons/fa';
-import { setNewGroup, setSmallScreen } from '../../state/reducers/screen';
-import { setChatChange, setSelectedChat } from '../../state/reducers/chat';
+import { setNewGroup } from '../../state/reducers/screen';
+import { setSelectedChat, updateChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
@@ -42,10 +42,8 @@ function CreateGroupChat() {
       .post(`${BACKEND_API}/api/chat/group`, { users, name, pic }, config)
       .then((response) => {
         dispatch(setSelectedChat(response.data));
-        dispatch(setSmallScreen(false));
+        dispatch(updateChat(response.data));
         dispatch(setNewGroup(false));
-        dispatch(setChatChange(true));
-        dispatch(setChatChange(true));
         setCreateGroupLoading(false);
       })
       .catch((error) => {
@@ -57,7 +55,7 @@ function CreateGroupChat() {
             'Cannot reach the server. Please check your internet connection.',
           );
         } else {
-          setError( error.message);
+          setError(error.message);
         }
       });
   };

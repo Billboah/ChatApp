@@ -11,15 +11,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { logoutUser, setUser } from '../../state/reducers/auth';
 import { setProfile } from '../../state/reducers/screen';
 import axios, { AxiosRequestConfig } from 'axios';
-import { setChatChange, setSelectedChat } from '../../state/reducers/chat';
+import { setError, setSelectedChat, signOut } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
 
-function Profile() {
+function Profile({
+  changeSelectedChat,
+}: {
+  changeSelectedChat: (selectedChatId: string | null) => void;
+}) {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
-  const [error, setError] = useState('');
   const [isHovered, setIsHovered] = useState(false);
   const [picLoading, setPicLoading] = useState(false);
   const [nameLoading, setNameLoading] = useState(false);
@@ -28,8 +31,10 @@ function Profile() {
 
   //logout
   const handleLogout = () => {
+    changeSelectedChat(null);
     dispatch(logoutUser());
     dispatch(setProfile(null));
+    dispatch(signOut());
     dispatch(setSelectedChat(null));
   };
 
@@ -37,7 +42,7 @@ function Profile() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-      setError('Image is not supported');
+      dispatch(setError('Image is not supported'));
       return;
     }
 
@@ -56,7 +61,6 @@ function Profile() {
       axios
         .put(`${BACKEND_API}/api/user/updatepic`, { pic: dataURL }, config)
         .then((response) => {
-          dispatch(setChatChange(true));
           dispatch(setUser(response.data));
           setNameEdit(false);
           setPicLoading(false);
@@ -64,13 +68,15 @@ function Profile() {
         .catch((error) => {
           setPicLoading(false);
           if (error.response) {
-            setError(error.response.data.error);
+            dispatch(setError(error.response.data.error));
           } else if (error.request) {
-            alert(
-              'Cannot reach the server. Please check your internet connection.',
+            dispatch(
+              setError(
+                'Cannot reach the server. Please check your internet connection.',
+              ),
             );
           } else {
-            console.error('Error:', error.message);
+            dispatch(setError(error.message));
           }
         });
     };
@@ -92,7 +98,6 @@ function Profile() {
       axios
         .put(`${BACKEND_API}/api/user/rename`, { username: changeName }, config)
         .then((response) => {
-          dispatch(setChatChange(true));
           dispatch(setUser(response.data));
           setNameEdit(false);
           setNameLoading(false);
@@ -101,16 +106,18 @@ function Profile() {
           setNameLoading(false);
           if (error.response) {
             if (error.response.status === 400) {
-              setError(error.response.data.error);
+              dispatch(setError(error.response.data.error));
             } else {
-              console.error('Server error:', error.response.data.error);
+              dispatch(setError(error.response.data.error));
             }
           } else if (error.request) {
-            alert(
-              'Cannot reach the server. Please check your internet connection.',
+            dispatch(
+              setError(
+                'Cannot reach the server. Please check your internet connection.',
+              ),
             );
           } else {
-            console.error('Error:', error.message);
+            dispatch(setError(error.message));
           }
         });
     }

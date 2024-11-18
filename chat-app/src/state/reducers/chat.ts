@@ -1,13 +1,22 @@
-// authSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Chat, Message, User } from '../../types';
 
 interface ChatState {
-  chats: Chat[] | null;
+  chats: Chat[];
   selectedChat: Chat | null;
-  chatChange: boolean;
   newMessage: Message | null;
   chatUser: User | null;
+  messageChats: {
+    regularMessages: Message[];
+    unreadMessages: Message[];
+    _id: string;
+    hasMoreMessages: boolean;
+    lastMessageId: any;
+  }[];
+  messagesLoading: boolean;
+  messageError: { [key: string]: boolean };
+  generalError: string;
+  autoScroll: boolean;
 }
 
 const storedChat = localStorage.getItem('chats');
@@ -25,12 +34,16 @@ try {
 const initialState: ChatState = {
   chats: parsedChats,
   selectedChat: null,
-  chatChange: false,
   newMessage: null,
   chatUser: parsedUser,
+  messageChats: [],
+  messagesLoading: false,
+  messageError: {},
+  generalError: '',
+  autoScroll: false,
 };
 
-const authSlice = createSlice({
+const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
@@ -46,76 +59,183 @@ const authSlice = createSlice({
         localStorage.removeItem('chats');
       }
     },
-    setNewMessage: (state, action: PayloadAction<Message>) => {
-      state.newMessage = action.payload;
+    updateChat: (state, action) => {
+      const updatedChats = state.chats.slice();
+      const currentChat = action.payload;
+
+      if (currentChat) {
+        updatedChats.unshift(currentChat);
+      }
+      state.chats = updatedChats;
     },
-    updateChats: (state, action) => {
-      const user = state?.chatUser;
-      if (state.chats !== null && user !== null) {
-        const updatedChats = state.chats.slice();
-        const selectedChat = state.selectedChat;
-        const chatToMove: Chat | undefined = updatedChats.find(
-          (chat) => chat._id === action.payload.chat._id,
-        );
+    setNewMessage: (
+      state,
+      action: PayloadAction<{ tempId: string; message: Message }>,
+    ) => {
+      const new_message = action.payload.message;
 
-        if (chatToMove) {
-          const chatUserToUpdate = chatToMove.users.find(
-            (chatUser) => chatUser._id === user._id,
+      state.newMessage = new_message;
+
+      const updatedChats = state.chats.slice();
+      const chat_message = state.messageChats.slice();
+
+      //search for the chat
+      const chatToMove = updatedChats.find(
+        (cht: Chat) => cht._id === new_message.chat._id,
+      );
+
+      //search for chat with the same tempId
+      const messageToInsert = chat_message.find(
+        (cht: any) => cht._id === new_message.chat._id,
+      );
+
+      if (chatToMove) {
+        chatToMove.latestMessage = new_message;
+
+        const indexOfChatToMove = updatedChats.indexOf(chatToMove);
+        if (indexOfChatToMove !== -1) {
+          updatedChats.splice(indexOfChatToMove, 1);
+          updatedChats.unshift(chatToMove);
+        }
+      }
+
+      if (new_message.chat._id === state.selectedChat?._id) {
+        state.autoScroll = true;
+        if (messageToInsert) {
+          messageToInsert.regularMessages.push(
+            ...messageToInsert.unreadMessages,
           );
-          if (selectedChat?._id !== chatToMove._id) {
-            const messageExists = chatUserToUpdate?.unreadMessages.some(
-              (message) => message._id === action.payload._id,
-            );
+          messageToInsert.unreadMessages = [];
 
-            if (!messageExists) {
-              chatUserToUpdate?.unreadMessages.push(action.payload);
-            }
+          const existingMessage = messageToInsert.regularMessages.slice();
+          const messageIndex = existingMessage.findIndex(
+            (msg: Message) => msg._id === action.payload.tempId,
+          );
+
+          if (messageIndex !== -1) {
+            messageToInsert.regularMessages[messageIndex] = new_message;
           } else {
-            chatUserToUpdate?.unreadMessages.filter(
-              (message) => message.chat._id !== chatToMove._id,
-            );
-          }
-          action.payload
-            ? (chatToMove.latestMessage = action.payload)
-            : (chatToMove.latestMessage = state.newMessage);
-          const indexOfChatToMove = updatedChats.indexOf(chatToMove);
-          if (indexOfChatToMove !== -1) {
-            updatedChats.splice(indexOfChatToMove, 1);
-            updatedChats.unshift(chatToMove);
+            messageToInsert.regularMessages.push(new_message);
           }
         }
-        state.chats = updatedChats;
+      } else {
+        if (!chatToMove?.unreadMessages.includes(new_message._id)) {
+          chatToMove?.unreadMessages.push(new_message._id);
+        }
       }
+      //update message
+      state.messageChats = chat_message;
+      state.chats = updatedChats;
+    },
+    unsetUnreadMessages: (state, action: PayloadAction<string>) => {
+      const chat_message = state.messageChats.slice();
+
+      //search for chat with the same tempId
+      const messageToInsert = chat_message.find(
+        (cht: any) => cht._id === action.payload,
+      );
+
+      //update message
+      if (messageToInsert) {
+        messageToInsert.regularMessages.push(...messageToInsert.unreadMessages);
+        messageToInsert.unreadMessages = [];
+      }
+      state.messageChats = chat_message;
     },
     setSelectedChat: (state, action: PayloadAction<Chat | null>) => {
-      const user = state?.chatUser;
-      state.selectedChat = action.payload;
-      if (state.chats !== null && user !== null && action.payload !== null) {
-        const updatedChats = state.chats.slice();
-        const selectedChat = action.payload;
+      const user = state.chatUser;
+      const chat = action.payload;
 
-        const chatToUpdate: Chat | undefined = updatedChats.find(
-          (chat) => chat._id === selectedChat._id,
+      state.selectedChat = action.payload;
+
+      if (chat && user) {
+        // Find the chat to update
+        const chatToUpdate = state.chats.find(
+          (cht: Chat) => cht._id === chat._id,
         );
 
         if (chatToUpdate) {
-          const chatUserToUpdate = chatToUpdate.users.find(
-            (chatUser) => chatUser._id === user._id,
-          );
-
-          if (chatUserToUpdate) {
-            chatUserToUpdate.unreadMessages =
-              chatUserToUpdate.unreadMessages.filter(
-                (message) => message.chat._id !== chatToUpdate._id,
-              );
-          }
+          chatToUpdate.unreadMessages = [];
         }
-
-        state.chats = updatedChats;
       }
     },
-    setChatChange: (state, action: PayloadAction<boolean>) => {
-      state.chatChange = action.payload;
+    setHasMore: (
+      state,
+      action: PayloadAction<{ hasMore: boolean; chatId: string }>,
+    ) => {
+      const chat_message = state.messageChats.slice();
+
+      const messageToInsert = chat_message.find(
+        (cht: any) => cht._id === action.payload.chatId,
+      );
+      if (messageToInsert) {
+        messageToInsert.hasMoreMessages = action.payload.hasMore;
+      }
+    },
+    updateMessageChats: (
+      state,
+      action: PayloadAction<{
+        chatId: string;
+        regularMessages: Message[];
+        unreadMessages: Message[];
+      } | null>,
+    ) => {
+      if (!action.payload) {
+        return;
+      }
+      const user = state.chatUser;
+
+      const { regularMessages, unreadMessages, chatId } = action.payload;
+
+      const lastMessageId =
+        regularMessages.length > 0
+          ? regularMessages[0]._id
+          : state.messageChats.find((cht: any) => cht._id === chatId)
+              ?.lastMessageId;
+
+      if (chatId && user) {
+        const existingChat = state.messageChats.find(
+          (cht: any) => cht._id === chatId,
+        );
+
+        if (existingChat) {
+          existingChat.regularMessages = [
+            ...regularMessages,
+            ...existingChat.regularMessages,
+          ];
+          existingChat.unreadMessages.push(...unreadMessages);
+          existingChat.lastMessageId = lastMessageId;
+        } else {
+          state.messageChats.push({
+            _id: chatId,
+            regularMessages: regularMessages,
+            unreadMessages: unreadMessages,
+            lastMessageId: lastMessageId,
+            hasMoreMessages: true,
+          });
+          state.autoScroll = true;
+        }
+      }
+    },
+    setAutoScroll: (state, action: PayloadAction<boolean>) => {
+      state.autoScroll = action.payload;
+    },
+    setMessageError: (
+      state,
+      action: PayloadAction<{ id: string; hasError: boolean }>,
+    ) => {
+      state.messageError[action.payload.id] = action.payload.hasError;
+    },
+    setError: (state, action: PayloadAction<string>) => {
+      state.generalError = action.payload;
+    },
+    setMessagesLoading: (state, action: PayloadAction<boolean>) => {
+      state.messagesLoading = action.payload;
+    },
+    signOut: (state) => {
+      state.messageChats = [];
+      state.chats = [];
+      localStorage.removeItem('chats');
     },
   },
 });
@@ -123,10 +243,17 @@ const authSlice = createSlice({
 export const {
   setCurrentUser,
   setChats,
+  updateMessageChats,
   setSelectedChat,
-  setChatChange,
-  updateChats,
   setNewMessage,
-} = authSlice.actions;
+  updateChat,
+  setMessagesLoading,
+  setMessageError,
+  unsetUnreadMessages,
+  signOut,
+  setError,
+  setHasMore,
+  setAutoScroll,
+} = chatSlice.actions;
 
-export default authSlice.reducer;
+export default chatSlice.reducer;

@@ -2,6 +2,7 @@ import { Response } from "express";
 import { User } from "../models/userModels";
 import generateToken from "../config/generateToken";
 import { CustomRequest } from "../config/express";
+import { Message } from "../models/messageModel";
 
 export const signupController = async (req: CustomRequest, res: Response) => {
   const { name, username, email, password, pic, confirmPassword } = req.body;
@@ -44,7 +45,9 @@ export const signupController = async (req: CustomRequest, res: Response) => {
       throw new Error("Failed to create the User");
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    const errorMessage = error.response ? error.response.data : error.message;
+
+    res.status(error.status || 500).json({ errorMessage });
   }
 };
 
@@ -76,7 +79,9 @@ export const signInController = async (req: CustomRequest, res: Response) => {
       throw new Error("Invalid user name or email or password ");
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    const errorMessage = error.response ? error.response.data : error.message;
+
+    res.status(error.status || 500).json({ errorMessage });
   }
 };
 
@@ -100,7 +105,9 @@ export const searchUsersController = async (
 
     res.json(users);
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    const errorMessage = error.response ? error.response.data : error.message;
+
+    res.status(error.status || 500).json({ errorMessage });
   }
 };
 
@@ -134,8 +141,9 @@ export const changeUserName = async (req: CustomRequest, res: Response) => {
       token: generateToken(updatedUser._id),
     });
   } catch (error) {
-    console.error(error);
-    res.status(error.status || 500).json({ error: error.message });
+    const errorMessage = error.response ? error.response.data : error.message;
+
+    res.status(error.status || 500).json({ errorMessage });
   }
 };
 
@@ -172,7 +180,9 @@ export const changePicController = async (
       token: generateToken(updatedUser._id),
     });
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    const errorMessage = error.response ? error.response.data : error.message;
+
+    res.status(error.status || 500).json({ errorMessage });
   }
 };
 
@@ -181,28 +191,30 @@ export const updateSelectedChat = async (req: CustomRequest, res: Response) => {
   const userId = req.user._id;
 
   try {
-    if (userId) {
-      if (selectedChatId) {
-        await User.findByIdAndUpdate(
-          userId,
-          {
-            selectedChat: selectedChatId,
-          },
-          { new: true }
-        );
-      } else {
-        await User.findByIdAndUpdate(
-          userId,
-          {
-            selectedChat: null,
-          },
-          { new: true }
-        );
-      }
+    if (!userId) {
+      return res.status(400).json({ error: "User authentication required" });
+    }
+    if (selectedChatId) {
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          selectedChat: selectedChatId,
+        },
+        { new: true }
+      );
+    } else {
+      await User.findByIdAndUpdate(
+        userId,
+        {
+          selectedChat: null,
+        },
+        { new: true }
+      );
     }
 
     res.json();
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    const errorMessage = error.response ? error.response.data : error.message;
+    res.status(error.status || 500).json({ errorMessage });
   }
 };

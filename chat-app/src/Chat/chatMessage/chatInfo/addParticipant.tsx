@@ -8,7 +8,7 @@ import React, {
 } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
-import { setChatChange, setSelectedChat } from '../../../state/reducers/chat';
+import { setError, setSelectedChat } from '../../../state/reducers/chat';
 import { RootState } from '../../../state/reducers';
 import { FadeLoading } from '../../../config/ChatLoading';
 import { BACKEND_API } from '../../../config/chatLogics';
@@ -22,7 +22,6 @@ interface UserProps {
 const AddParticipant = ({ setAddUser }: UserProps) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
-  const [error, setError] = useState('');
   const ref = useRef<HTMLDivElement | null>(null);
   const [search, setSearch] = useState('');
   const [userList, setUserList] = useState<User[]>([]);
@@ -54,7 +53,6 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
         config,
       )
       .then((response) => {
-        dispatch(setChatChange(true));
         dispatch(setSelectedChat(response.data));
         setAddUser(false);
         setAddLoading(false);
@@ -63,16 +61,16 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
         setAddLoading(false);
         if (error.response) {
           if (error.response.status === 400) {
-            setError(error.response.data.error);
+            dispatch(setError(error.response.data.error))
           } else {
-            console.error('Server error:', error.response.data.error);
+            dispatch(setError( error.response.data.error))
           }
         } else if (error.request) {
-          alert(
+          dispatch(setError(
             'Cannot reach the server. Please check your internet connection.',
-          );
+          ))
         } else {
-          console.error('Error:', error.message);
+          dispatch(setError( error.message))
         }
       });
   };

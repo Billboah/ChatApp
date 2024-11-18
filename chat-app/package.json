@@ -12,6 +12,7 @@
     "axios": "^1.4.0",
     "date-fns": "^2.30.0",
     "framer-motion": "^10.12.16",
+    "jwt-decode": "^4.0.0",
     "react": "^18.2.0",
     "react-chat-engine": "^1.11.28",
     "react-dom": "^18.2.0",
@@ -30,12 +31,6 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
   },
   "browserslist": {
     "production": [

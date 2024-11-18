@@ -15,7 +15,7 @@ const initialState: SreenState = {
   info: false,
 };
 
-const authSlice = createSlice({
+const screenSlice = createSlice({
   name: 'screen',
   initialState,
   reducers: {
@@ -35,6 +35,6 @@ const authSlice = createSlice({
 });
 
 export const { setSmallScreen, setProfile, setNewGroup, setInfo } =
-  authSlice.actions;
+  screenSlice.actions;
 
-export default authSlice.reducer;
+export default screenSlice.reducer;

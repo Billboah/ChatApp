@@ -1,24 +1,19 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
-import { RootState } from '../../state/reducers';
+import { RootState } from '../../../state/reducers';
 import { FaExclamationCircle, FaRegClock, FaUser } from 'react-icons/fa';
 import DoneIcon from '@mui/icons-material/Done';
 import { format, isToday, isYesterday, isSameYear, isSameWeek } from 'date-fns';
-import { Message } from '../../types';
+import { Message } from '../../../types';
 
 type Props = {
-  messageLoadingError: { [key: string]: boolean };
-  messages: Message[];
-  contentRef: React.MutableRefObject<HTMLDivElement | null>;
+  groupedMessages: Record<string, Record<string, Message[]>>;
 };
 
-const DisplayMessages: React.FC<Props> = ({
-  messageLoadingError,
-  messages,
-  contentRef,
-}) => {
+const DisplayMessages: React.FC<Props> = ({ groupedMessages }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
+  const { messageError } = useSelector((state: RootState) => state.chat);
 
   //time format
   const timeFormat = (message: any) => {
@@ -26,50 +21,6 @@ const DisplayMessages: React.FC<Props> = ({
     const updatedAtDate = new Date(mongoDBUpdatedAt);
     return format(updatedAtDate, 'HH:mm');
   };
-
-  // Grouping messages by date and sender
-  const groupedByDate: Record<string, Message[]> = {};
-  const groupedMessages: Record<string, Record<string, Message[]>> = {};
-
-  messages.forEach((message) => {
-    const date = message.updatedAt.split('T')[0];
-    if (!groupedByDate[date]) {
-      groupedByDate[date] = [];
-    }
-    groupedByDate[date].push(message);
-  });
-
-  for (const date in groupedByDate) {
-    const messagesForDate = groupedByDate[date];
-    const continuousSenderGroups: Message[][] = [];
-
-    let currentSenderGroup: Message[] = [];
-    let prevSender = '';
-
-    messagesForDate.forEach((message) => {
-      if (message.sender._id !== prevSender) {
-        if (currentSenderGroup.length > 0) {
-          continuousSenderGroups.push(currentSenderGroup);
-        }
-        currentSenderGroup = [];
-      }
-      currentSenderGroup.push(message);
-      prevSender = message.sender._id;
-    });
-
-    if (currentSenderGroup.length > 0) {
-      continuousSenderGroups.push(currentSenderGroup);
-    }
-
-    if (!groupedMessages[date]) {
-      groupedMessages[date] = {};
-    }
-
-    continuousSenderGroups.forEach((senderGroup, groupIndex) => {
-      const sender = senderGroup[0].sender._id;
-      groupedMessages[date][`${sender}_${groupIndex + 1}`] = senderGroup;
-    });
-  }
 
   //format date
   const formattedDate = (date: any) => {
@@ -90,7 +41,7 @@ const DisplayMessages: React.FC<Props> = ({
   };
 
   return (
-    <div className={`flex flex-col w-full h-full `} ref={contentRef}>
+    <div className={`flex flex-col w-full h-fit `}>
       {Object.entries(groupedMessages).map(([date]) => (
         <div key={date} className="">
           <div className="w-full flex items-center justify-center text-sm  text-gray-500">
@@ -190,7 +141,7 @@ const DisplayMessages: React.FC<Props> = ({
                       </div>
                     </div>
                     {message.sender._id === user?._id &&
-                      messageLoadingError[message._id] && (
+                      messageError[message._id] && (
                         <FaExclamationCircle
                           color="red"
                           size={15}

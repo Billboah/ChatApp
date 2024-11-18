@@ -1,12 +1,21 @@
-import React, { Dispatch, SetStateAction } from 'react';
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSelectedChat } from '../../state/reducers/chat';
+import {
+  setError,
+  setHasMore,
+  setMessagesLoading,
+  setSelectedChat,
+  unsetUnreadMessages,
+  updateMessageChats,
+} from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
-import { setSmallScreen } from '../../state/reducers/screen';
-import { Chat, Message } from '../../types';
+import { Chat } from '../../types';
 import { format, isToday, isYesterday, isSameWeek, isSameYear } from 'date-fns';
-import { getSender, getUnreadMessages } from '../../config/chatLogics';
+import { BACKEND_API, getSender } from '../../config/chatLogics';
 import { FaUser, FaUserFriends } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
+import axios from 'axios';
+import { setSmallScreen } from '../../state/reducers/screen';
 
 type ChatProps = {
   chat: Chat;
@@ -16,42 +25,153 @@ type ChatProps = {
 const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
+  const { messageChats } = useSelector((state: RootState) => state.chat);
+  const { chats } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch();
+  const location = useLocation();
 
-  const handleSelect = (chat: Chat) => {
-    dispatch(setSelectedChat(chat));
-    dispatch(setSmallScreen(false));
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 768px)');
+
+    const handleMediaChange = (e: any) => {
+      if (e.matches) {
+        dispatch(setSelectedChat(null));
+      } else {
+        dispatch(setSelectedChat(chat));
+      }
+    };
+
+    mediaQuery.addEventListener('change', handleMediaChange);
+
+    if (mediaQuery.matches) {
+      dispatch(setSelectedChat(null));
+    }
+
+    return () => {
+      mediaQuery.removeEventListener('change', handleMediaChange);
+    };
+  }, [location.pathname]);
+
+  // api for unread messages
+  const fetchUnreadMessages = async (chatId: string) => {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    };
+    try {
+      const response = await axios.get(
+        `${BACKEND_API}/api/message/unreadmessage/${chatId}`,
+        config,
+      );
+      dispatch(
+        updateMessageChats({
+          chatId: chatId,
+          unreadMessages: response.data,
+          regularMessages: [],
+        }),
+      );
+    } catch (error: any) {
+      if (error.response) {
+        dispatch(setError(error.response.data.error));
+      } else if (error.request) {
+        dispatch(
+          setError(
+            'Cannot reach the server. Please check your internet connection and try again.',
+          ),
+        );
+      } else {
+        dispatch(setError(error.message));
+      }
+    }
   };
 
-  const timeFormat = (message: Message) => {
-    const mongoDBUpdatedAt = message?.updatedAt;
-    const updatedAtDate = new Date(mongoDBUpdatedAt);
-    return format(updatedAtDate, 'HH:mm');
+  //api for messages of a chat
+  const fetchMessages = async (chatId: string) => {
+    dispatch(setMessagesLoading(true));
+    const config = {
+      params: { lastMessageId: null },
+      headers: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    };
+    try {
+      const response = await axios.get(
+        `${BACKEND_API}/api/message/${chatId}`,
+        config,
+      );
+      dispatch(setMessagesLoading(false));
+      dispatch(
+        updateMessageChats({
+          chatId: chatId,
+          regularMessages: response.data.regularMessages,
+          unreadMessages: response.data.unreadMessages,
+        }),
+      );
+    } catch (error: any) {
+      if (error.response) {
+        dispatch(setMessagesLoading(false));
+        dispatch(setError(error.response.data.error));
+      } else if (error.request) {
+        dispatch(setMessagesLoading(false));
+        dispatch(setError('Cannot reach the server.'));
+      } else {
+        dispatch(setMessagesLoading(false));
+        dispatch(setError(error.message));
+      }
+    }
+  };
+
+  //click on a chat
+  const handleSelect = (chat: Chat) => {
+    dispatch(setSelectedChat(chat));
+
+    dispatch(setSmallScreen(false));
+
+    const existingChat = messageChats.find((cht: any) => cht._id === chat._id);
+
+    const chatToUpdate = chats.find((cht: Chat) => cht._id === chat._id);
+
+    if (existingChat) {
+      if (chatToUpdate) {
+        if (chatToUpdate.unreadMessages.length > 0) {
+          //add unread message to the existingChat.messages
+          fetchUnreadMessages(chat._id);
+        } else {
+          selectedChat && dispatch(unsetUnreadMessages(selectedChat._id));
+        }
+      }
+    } else {
+      //socket.emit('join chat', selectedChat && selectedChat._id);
+      return fetchMessages(chat._id);
+    }
   };
 
   const formattedDateAndTime = (date: any) => {
-    const today = new Date();
-    const messageDate = new Date(date);
+    if (date) {
+      const today = new Date();
+      const messageDate = new Date(date);
 
-    if (isToday(messageDate)) {
-      return format(messageDate, 'HH:mm');
-    } else if (isYesterday(messageDate)) {
-      return 'Yesterday';
-    } else if (isSameWeek(messageDate, today)) {
-      return format(messageDate, 'd/MM/yyyy');
-    } else if (isSameYear(messageDate, today)) {
-      return format(messageDate, ' d/MM/yyyy');
-    } else {
-      return format(messageDate, ' d/MM/yyyy');
+      if (isToday(messageDate)) {
+        return format(messageDate, 'HH:mm');
+      } else if (isYesterday(messageDate)) {
+        return 'Yesterday';
+      } else if (isSameWeek(messageDate, today)) {
+        return format(messageDate, 'd/MM/yyyy');
+      } else if (isSameYear(messageDate, today)) {
+        return format(messageDate, ' d/MM/yyyy');
+      } else {
+        return format(messageDate, ' d/MM/yyyy');
+      }
     }
   };
 
   return (
     <button
       className={` ${
-        selectedChat?._id === chat._id ? 'bg-gray-200' : 'bg-inherit'
+        selectedChat?._id === chat?._id ? 'bg-gray-200' : 'bg-inherit'
       }  w-full h-[70px] hover:bg-gray-200 active:bg-gray-300`}
-      key={chat._id}
+      key={chat?._id}
       onClick={() => {
         handleSelect(chat), setSearch('');
       }}
@@ -134,7 +254,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
           {chat.latestMessage && (
             <p
               className={`text-xs ${
-                getUnreadMessages(chat, user)?.length > 0
+                chat.unreadMessages.length > 0
                   ? 'text-blue-500'
                   : 'text-gray-500'
               } `}
@@ -142,9 +262,9 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
               {formattedDateAndTime(chat.latestMessage?.updatedAt)}
             </p>
           )}
-          {getUnreadMessages(chat, user)?.length > 0 && (
+          {chat.unreadMessages.length > 0 && (
             <div className="bg-blue-500 rounded-full px-1 font-[10px] text-white text-[10px] ">
-              {getUnreadMessages(chat, user)?.length}
+              {chat.unreadMessages.length}
             </div>
           )}
         </div>

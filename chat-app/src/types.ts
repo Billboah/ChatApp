@@ -36,6 +36,7 @@ export interface Chat {
   _id: string;
   pic: string;
   chatName: string;
+  unreadMessages: any[];
   isGroupChat: boolean;
   latestMessage: Message | null;
   createdAt: string;
