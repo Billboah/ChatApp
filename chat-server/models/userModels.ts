@@ -49,7 +49,7 @@ const UserSchema = new mongoose.Schema(
         validator: function (value: any) {
           return value === this.password;
         },
-        message: "Passwords do not match",
+        message: "password and confirm password do not match",
       },
       minLength: 8,
     },

@@ -73,15 +73,13 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
       );
     } catch (error: any) {
       if (error.response) {
-        dispatch(setError(error.response.data.error));
+        dispatch(setError(error.response.data.message));
       } else if (error.request) {
-        dispatch(
-          setError(
-            'Cannot reach the server. Please check your internet connection and try again.',
-          ),
-        );
+        console.error('No response received:', error.request);
+        dispatch(setError('Network error, please try again later.'));
       } else {
-        dispatch(setError(error.message));
+        console.error('Error:', error.message);
+        dispatch(setError('An error occurred, please try again.'));
       }
     }
   };
@@ -109,15 +107,15 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
         }),
       );
     } catch (error: any) {
+      dispatch(setMessagesLoading(false));
       if (error.response) {
-        dispatch(setMessagesLoading(false));
-        dispatch(setError(error.response.data.error));
+        dispatch(setError(error.response.data.message));
       } else if (error.request) {
-        dispatch(setMessagesLoading(false));
-        dispatch(setError('Cannot reach the server.'));
+        console.error('No response received:', error.request);
+        dispatch(setError('Network error, please try again later.'));
       } else {
-        dispatch(setMessagesLoading(false));
-        dispatch(setError(error.message));
+        console.error('Error:', error.message);
+        dispatch(setError('An error occurred, please try again.'));
       }
     }
   };

@@ -26,34 +26,6 @@ function Chats() {
     }
   }, [user]);
 
-  // const handleScrollUp = () => {
-  //   const messageChat = messageChats.find(
-  //     (chat: any) => chat._id === selectedChat?._id,
-  //   );
-
-  //   if (scrollContainerRef.current) {
-  //     const { scrollTop } = scrollContainerRef.current;
-  //     if (scrollTop === 0 && !messagesLoading) {
-  //       //selectedChat && dispatch(page_increment(selectedChat._id));
-  //     }
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (scrollContainerRef.current) {
-  //     scrollContainerRef.current.addEventListener('scroll', handleScrollUp);
-  //   }
-
-  //   return () => {
-  //     if (scrollContainerRef.current) {
-  //       scrollContainerRef.current.removeEventListener(
-  //         'scroll',
-  //         handleScrollUp,
-  //       );
-  //     }
-  //   };
-  // }, [handleScrollUp]);
-
   const changeSelectedChat = useCallback(
     (selectedChatId: string | null) => {
       if (user?.token) {
@@ -74,15 +46,13 @@ function Chats() {
           })
           .catch((error) => {
             if (error.response) {
-              dispatch(setError(error));
+              dispatch(setError(error.response.data.message));
             } else if (error.request) {
-              dispatch(
-                setError(
-                  'Cannot reach the server. Please check your internet connection.',
-                ),
-              );
+              console.error('No response received:', error.request);
+              dispatch(setError('Network error, please try again later.'));
             } else {
-              dispatch(setError(error));
+              console.error('Error:', error.message);
+              dispatch(setError('An error occurred, please try again.'));
             }
           });
       }
@@ -173,17 +143,18 @@ function Chats() {
           {newGroup && <CreateGroupChat />}
         </div>
       )}
-      <div
-        className={`${
-          !generalError ? 'hidden' : 'animate__fadeInUp'
-        } animate__animated animate__delay-300ms absolute  bottom-[20px] flex h-fit w-full items-center justify-center p-[10px] `}
-        role="button"
-        onClick={() => dispatch(setError(''))}
-      >
-        <div className="flex h-fit w-full max-w-[500px] items-center justify-center rounded border border-inherit bg-red-500 px-1 py-2 text-white shadow-lg">
-          <p className="text-center font-semibold">ERROR: {generalError}</p>
+      {generalError && (
+        <div
+          className={` animate__fadeInUp animate__animated animate__delay-300ms absolute  bottom-[20px] flex h-fit w-full items-center justify-center p-[10px] `}
+        >
+          <button
+            className="flex h-fit w-full max-w-[500px] items-center justify-center rounded border border-inherit bg-red-500 px-1 py-2 text-white shadow-lg font-semibold"
+            onClick={() => dispatch(setError(''))}
+          >
+            {generalError}
+          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 }

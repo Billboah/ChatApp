@@ -49,13 +49,13 @@ function CreateGroupChat() {
       .catch((error) => {
         setCreateGroupLoading(false);
         if (error.response) {
-          setError(error.response.data.error);
+          setError(error.response.data.message);
         } else if (error.request) {
-          alert(
-            'Cannot reach the server. Please check your internet connection.',
-          );
+          console.error('No response received:', error.request);
+          alert('Network error, please try again later.');
         } else {
-          setError(error.message);
+          console.error('Error:', error.message);
+          setError('An error occurred, please try again.');
         }
       });
   };

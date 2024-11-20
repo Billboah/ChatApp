@@ -1,10 +1,14 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { User } from "../models/userModels";
 import generateToken from "../config/generateToken";
 import { CustomRequest } from "../config/express";
 import { Message } from "../models/messageModel";
 
-export const signupController = async (req: CustomRequest, res: Response) => {
+export const signupController = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { name, username, email, password, pic, confirmPassword } = req.body;
 
   try {
@@ -41,17 +45,18 @@ export const signupController = async (req: CustomRequest, res: Response) => {
         token: generateToken(user._id),
       });
     } else {
-      res.status(400);
       throw new Error("Failed to create the User");
     }
   } catch (error) {
-    const errorMessage = error.response ? error.response.data : error.message;
-
-    res.status(error.status || 500).json({ errorMessage });
+    next(error);
   }
 };
 
-export const signInController = async (req: CustomRequest, res: Response) => {
+export const signInController = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { name, password } = req.body;
   try {
     if (!password || !name) {
@@ -75,19 +80,18 @@ export const signInController = async (req: CustomRequest, res: Response) => {
         token: generateToken(user._id),
       });
     } else {
-      res.status(400);
-      throw new Error("Invalid user name or email or password ");
+      throw new Error("Invalid user name/email or password ");
     }
   } catch (error) {
-    const errorMessage = error.response ? error.response.data : error.message;
-
-    res.status(error.status || 500).json({ errorMessage });
+    console.log(error);
+    next(error);
   }
 };
 
 export const searchUsersController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   const keyword = req.query.search;
 
@@ -105,13 +109,15 @@ export const searchUsersController = async (
 
     res.json(users);
   } catch (error) {
-    const errorMessage = error.response ? error.response.data : error.message;
-
-    res.status(error.status || 500).json({ errorMessage });
+    next(error);
   }
 };
 
-export const changeUserName = async (req: CustomRequest, res: Response) => {
+export const changeUserName = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const username: string = req.body.username;
     const userId = req.user._id;
@@ -141,15 +147,14 @@ export const changeUserName = async (req: CustomRequest, res: Response) => {
       token: generateToken(updatedUser._id),
     });
   } catch (error) {
-    const errorMessage = error.response ? error.response.data : error.message;
-
-    res.status(error.status || 500).json({ errorMessage });
+    next(error);
   }
 };
 
 export const changePicController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const pic: string = req.body.pic;
@@ -180,13 +185,15 @@ export const changePicController = async (
       token: generateToken(updatedUser._id),
     });
   } catch (error) {
-    const errorMessage = error.response ? error.response.data : error.message;
-
-    res.status(error.status || 500).json({ errorMessage });
+    next(error);
   }
 };
 
-export const updateSelectedChat = async (req: CustomRequest, res: Response) => {
+export const updateSelectedChat = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { selectedChatId } = req.body;
   const userId = req.user._id;
 
@@ -214,7 +221,6 @@ export const updateSelectedChat = async (req: CustomRequest, res: Response) => {
 
     res.json();
   } catch (error) {
-    const errorMessage = error.response ? error.response.data : error.message;
-    res.status(error.status || 500).json({ errorMessage });
+    next(error);
   }
 };

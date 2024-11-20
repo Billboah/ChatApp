@@ -4,7 +4,6 @@ import SendIcon from '@mui/icons-material/Send';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../state/reducers';
 import { v4 as uuidv4 } from 'uuid';
-import { Message } from '../../types';
 import {
   setError,
   setMessageError,
@@ -69,19 +68,21 @@ const Input: React.FC<Props> = ({ typingLogic, handleStopTyping }) => {
           socket.emit('send message', response.data);
         })
         .catch((error) => {
+          dispatch(
+            setMessageError({
+              id: inputMessage._id,
+              hasError: true,
+            }),
+          );
+
           if (error.response) {
-            dispatch(setMessageError({ id: inputMessage._id, hasError: true }));
-            dispatch(setError(error.response.data.error));
+            dispatch(setError(error.response.data.message));
           } else if (error.request) {
-            dispatch(
-              setError(
-                'Cannot reach the server. Please check your internet connection.',
-              ),
-            );
-            dispatch(setMessageError({ id: inputMessage._id, hasError: true }));
+            console.error('No response received:', error.request);
+            dispatch(setError('Network error, please try again later.'));
           } else {
-            dispatch(setError(error.message));
-            dispatch(setMessageError({ id: tempId, hasError: true }));
+            console.error('Error:', error.message);
+            dispatch(setError('An error occurred, please try again.'));
           }
         });
       setInput('');

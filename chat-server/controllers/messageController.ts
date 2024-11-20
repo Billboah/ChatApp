@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { Chat } from "../models/chatModel";
 import { Message } from "../models/messageModel";
 import { User } from "../models/userModels";
@@ -6,12 +6,15 @@ import { CustomRequest } from "../config/express";
 import { AnyAaaaRecord } from "dns";
 
 //send message
-export const sendMessage = async (req: CustomRequest, res: Response) => {
+export const sendMessage = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { content, chatId }: { content: string; chatId: string } = req.body;
 
   if (!content || !chatId) {
-    console.log("Invalid data passed into request");
-    return res.sendStatus(400);
+    throw new Error("Invalid data passed into request");
   }
 
   const newMessage = {
@@ -54,22 +57,26 @@ export const sendMessage = async (req: CustomRequest, res: Response) => {
 
     res.json(message);
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //get all messages
-export const getChatMessages = async (req: CustomRequest, res: Response) => {
+export const getChatMessages = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const chatId = req.params.chatId;
   const userId = req?.user._id;
   const { lastMessageId } = req.query;
   const limit = 20;
   if (!chatId) {
-    return res.status(400).json({ error: "Chat ID is required" });
+    throw new Error("Chat ID is required");
   }
 
   if (!userId) {
-    return res.status(400).json({ error: "User does not exist" });
+    throw new Error("User does not exist");
   }
 
   try {
@@ -136,16 +143,21 @@ export const getChatMessages = async (req: CustomRequest, res: Response) => {
       });
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
-export const getUnreadMessages = async (req: CustomRequest, res: Response) => {
+//get unread message only
+export const getUnreadMessages = async (
+  req: CustomRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const chatId = req.params.chatId;
   const userId = req?.user._id;
 
   if (!chatId) {
-    return res.status(400).json({ error: "Chat ID is required" });
+    throw new Error("Chat ID is required");
   }
 
   try {
@@ -178,6 +190,6 @@ export const getUnreadMessages = async (req: CustomRequest, res: Response) => {
 
     res.json(unreadMessages.reverse());
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };

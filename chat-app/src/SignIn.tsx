@@ -34,13 +34,13 @@ export default function SignIn() {
       .catch(function (error) {
         setLoading(false);
         if (error.response) {
-          setSignInError(error.response.data.error);
+          setSignInError(error.response.data.message);
         } else if (error.request) {
-          alert(
-            'Cannot reach the server. Please check your internet connection.',
-          );
+          console.error('No response received:', error.request);
+          alert('Network error, please try again later.');
         } else {
           console.error('Error:', error.message);
+          alert('An error occurred, please try again.');
         }
       });
   };

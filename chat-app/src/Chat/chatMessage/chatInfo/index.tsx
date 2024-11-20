@@ -88,17 +88,15 @@ function ChatInfo() {
           ...prevSelectLoading,
           [removeUser]: false,
         }));
+        setCommonGroupLoading(false);
         if (error.response) {
-          setCommonGroupLoading(false);
-          dispatch(setError( error.response.data.error))
+          dispatch(setError(error.response.data.message));
         } else if (error.request) {
-          setCommonGroupLoading(false);
-          dispatch(setError(
-            'Cannot reach the server. Please check your internet connection and refresh the page.',
-          ))
+          console.error('No response received:', error.request);
+          dispatch(setError('Network error, please try again later.'));
         } else {
-          setCommonGroupLoading(false);
-          dispatch(setError( error.message))
+          console.error('Error:', error.message);
+          dispatch(setError('An error occurred, please try again.'));
         }
       });
   };
@@ -107,7 +105,7 @@ function ChatInfo() {
   const handleFileChange = (e: { target: any }) => {
     const fileInput = e.target;
     if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-      dispatch(setError('Image is not supported'))
+      dispatch(setError('Image is not supported'));
       return;
     }
 
@@ -135,17 +133,15 @@ function ChatInfo() {
         })
         .catch((error) => {
           setGroupIconLoading(false);
+          setCommonGroupLoading(false);
           if (error.response) {
-            setCommonGroupLoading(false);
-            dispatch(setError( error.response.data.error))
+            dispatch(setError(error.response.data.message));
           } else if (error.request) {
-            setCommonGroupLoading(false);
-            dispatch(setError(
-              'Cannot reach the server. Please check your internet connection and refresh the page.',
-            ))
+            console.error('No response received:', error.request);
+            dispatch(setError('Network error, please try again later.'));
           } else {
-            setCommonGroupLoading(false);
-            dispatch(setError( error.message))
+            console.error('Error:', error.message);
+            dispatch(setError('An error occurred, please try again.'));
           }
         });
     };
@@ -180,17 +176,15 @@ function ChatInfo() {
         })
         .catch((error) => {
           setGroupNameLoading(false);
+          setCommonGroupLoading(false);
           if (error.response) {
-            setCommonGroupLoading(false);
-            dispatch(setError( error.response.data.error))
+            dispatch(setError(error.response.data.message));
           } else if (error.request) {
-            setCommonGroupLoading(false);
-            dispatch(setError(
-              'Cannot reach the server. Please check your internet connection and refresh the page.',
-            ))
+            console.error('No response received:', error.request);
+            dispatch(setError('Network error, please try again later.'));
           } else {
-            setCommonGroupLoading(false);
-            dispatch(setError( error.message))
+            console.error('Error:', error.message);
+            dispatch(setError('An error occurred, please try again.'));
           }
         });
     }
@@ -221,17 +215,15 @@ function ChatInfo() {
           setCommonGroup(groupChatsWithUser);
         })
         .catch((error) => {
+          setCommonGroupLoading(false);
           if (error.response) {
-            setCommonGroupLoading(false);
-            dispatch(setError( error.response.data.error))
+            dispatch(setError(error.response.data.message));
           } else if (error.request) {
-            setCommonGroupLoading(false);
-            dispatch(setError(
-              'Cannot reach the server. Please check your internet connection and refresh the page.',
-            ))
+            console.error('No response received:', error.request);
+            dispatch(setError('Network error, please try again later.'));
           } else {
-            setCommonGroupLoading(false);
-            dispatch(setError( error.message))
+            console.error('Error:', error.message);
+            dispatch(setError('An error occurred, please try again.'));
           }
         });
     }

@@ -1,4 +1,4 @@
-import { Response } from "express";
+import { Response, NextFunction } from "express";
 import { Chat, IChat } from "../models/chatModel";
 import { User } from "../models/userModels";
 import { CustomRequest, user } from "../config/express";
@@ -6,30 +6,29 @@ import { CustomRequest, user } from "../config/express";
 //create individual chat
 export const createChatController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { userId }: { userId: string } = req.body;
 
     if (!userId) {
-      console.log("UserId param not sent with request");
-      return res.sendStatus(400);
+      throw new Error("Select a user to start a new chat chat");
     }
 
     const currentUser: user = req.user;
     const targetUser: user | null = await User.findById(userId);
 
     if (!targetUser) {
-      console.log("Target user not found");
-      return res.sendStatus(404);
+      throw new Error("Target user not found");
     }
 
-    //if chat is available
     const isChat: IChat[] = await Chat.find({
       isGroupChat: false,
       users: { $all: [currentUser._id, targetUser._id] },
     });
 
+    //if chat is available
     if (isChat.length > 0) {
       return res.send({
         chat: isChat[0],
@@ -69,18 +68,19 @@ export const createChatController = async (
           .status(200)
           .send({ ...fullChat.toObject(), unreadMessages: [] });
       } else {
-        return res.status(500).send("Failed to create and fetch the chat");
+        throw new Error("Failed to create and fetch the chat");
       }
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //get all chat
 export const getAllChatController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const results = await Chat.find({ users: req.user._id })
@@ -114,14 +114,15 @@ export const getAllChatController = async (
 
     res.status(200).json(populatedChat);
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //create a group chat
 export const createGroupChatController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     if (!req.body.users || !req.body.name) {
@@ -162,19 +163,18 @@ export const createGroupChatController = async (
         .status(200)
         .send({ ...fullGroupChat.toObject(), unreadMessages: [] });
     } else {
-      return res
-        .status(500)
-        .send("Failed to create and fetch the the group chat");
+      throw new Error("Failed to create and fetch the the group chat");
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //change group name
 export const changeGroupNameController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { chatId, chatName }: { chatId: string; chatName: string } = req.body;
@@ -192,19 +192,20 @@ export const changeGroupNameController = async (
       .populate("groupAdmin", "username pic email");
 
     if (!updatedChat) {
-      return res.status(400).send("Chat Not Found");
+      throw new Error("Chat Not Found");
     }
 
     res.json(updatedChat);
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //change group icon
 export const changeGroupIconController = async (
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { chatId, pic }: { chatId: string; pic: string } = req.body;
@@ -222,17 +223,18 @@ export const changeGroupIconController = async (
       .populate("groupAdmin", "username pic email");
 
     if (!updatedChat) {
-      return res.status(400).send("Chat Not Found");
+      throw new Error("Chat Not Found");
     }
 
     res.json(updatedChat);
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //remove a group member
 export const removeMemberController = async (
+  next: NextFunction,
   req: CustomRequest,
   res: Response
 ) => {
@@ -253,7 +255,7 @@ export const removeMemberController = async (
         .populate("groupAdmin", "username pic email");
 
       if (!removedChat) {
-        return res.status(400).send("Chat Not Found");
+        throw new Error("Chat Not Found");
       }
 
       res.json(removedChat);
@@ -262,12 +264,13 @@ export const removeMemberController = async (
       throw new Error("You are not authorized to perform this function");
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };
 
 //add a group member/members
 export const addMemberController = async (
+  next: NextFunction,
   req: CustomRequest,
   res: Response
 ) => {
@@ -297,6 +300,6 @@ export const addMemberController = async (
       throw new Error("You are not authorized to perform this function");
     }
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    next(error);
   }
 };

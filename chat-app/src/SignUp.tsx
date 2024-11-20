@@ -45,17 +45,13 @@ function SignUp() {
       .catch(function (error) {
         setLoading(false);
         if (error.response) {
-          if (error.response.status === 400) {
-            setSignUpError(error.response.data.error);
-          } else {
-            setSignUpError(error.response.data.error);
-          }
+          setSignUpError(error.response.data.message);
         } else if (error.request) {
-          alert(
-            'Cannot reach the server. Please check your internet connection.',
-          );
+          console.error('No response received:', error.request);
+          alert('Network error, please try again later.');
         } else {
           console.error('Error:', error.message);
+          alert('An error occurred, please try again.');
         }
       });
   };

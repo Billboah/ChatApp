@@ -119,15 +119,15 @@ const chatMessages: React.FC = () => {
           dispatch(setHasMore({ hasMore: false, chatId: chatId }));
         }
       } catch (error: any) {
+        dispatch(setMessagesLoading(false));
         if (error.response) {
-          dispatch(setMessagesLoading(false));
-          dispatch(setError(error.response.data.error));
+          dispatch(setError(error.response.data.message));
         } else if (error.request) {
-          dispatch(setMessagesLoading(false));
-          dispatch(setError('Cannot reach the server.'));
+          console.error('No response received:', error.request);
+          dispatch(setError('Network error, please try again later.'));
         } else {
-          dispatch(setMessagesLoading(false));
-          dispatch(setError(error.message));
+          console.error('Error:', error.message);
+          dispatch(setError('An error occurred, please try again.'));
         }
       }
     }

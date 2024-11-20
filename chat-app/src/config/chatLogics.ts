@@ -1,7 +1,7 @@
 import { User } from '../types';
 import { io } from 'socket.io-client';
 
-export const BACKEND_API = 'http://localhost:5000';
+export const BACKEND_API = 'https://chatserver.vercel.app';
 
 export const socket = io(BACKEND_API);
 

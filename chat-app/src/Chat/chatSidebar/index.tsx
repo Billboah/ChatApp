@@ -52,17 +52,15 @@ export default function chatSidebar({
         setChatsLoading(false);
       })
       .catch((error) => {
+        setChatsLoading(false);
         if (error.response) {
-          setChatsLoading(false);
-          dispatch(setError( error.response.data.error))
+          dispatch(setError(error.response.data.message));
         } else if (error.request) {
-          setChatsLoading(false);
-          dispatch(setError(
-            'Cannot reach the server. Please check your internet connection and refresh the page.',
-          ))
+          console.error('No response received:', error.request);
+          dispatch(setError('Network error, please try again later.'));
         } else {
-          setChatsLoading(false);
-          dispatch(setError( error.message))
+          console.error('Error:', error.message);
+          dispatch(setError('An error occurred, please try again.'));
         }
       });
   }, []);
@@ -98,13 +96,13 @@ export default function chatSidebar({
           [userId]: false,
         }));
         if (error.response) {
-          dispatch(setError(error.response.data.error))
+          dispatch(setError(error.response.data.message));
         } else if (error.request) {
-          dispatch(setError(
-            'Cannot reach the server. Please check your internet connection.',
-          ))
+          console.error('No response received:', error.request);
+          dispatch(setError('Network error, please try again later.'));
         } else {
-          dispatch(setError( error.message))
+          console.error('Error:', error.message);
+          dispatch(setError('An error occurred, please try again.'));
         }
       });
   };
