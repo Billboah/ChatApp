@@ -111,6 +111,7 @@ function Chats() {
     };
   }, []);
 
+  //handle error disappearing
   useEffect(() => {
     const timeout = setTimeout(() => {
       dispatch(setError(''));

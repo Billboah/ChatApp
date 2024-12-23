@@ -294,6 +294,9 @@ const chatMessages: React.FC = () => {
                             alt="group icon"
                             title="Profile details"
                             className="h-full w-full rounded-full"
+                            height={35}
+                            width={35}
+                            loading="lazy"
                           />
                         ) : (
                           <FaUserFriends color="white" size={25} />
@@ -306,6 +309,9 @@ const chatMessages: React.FC = () => {
                             src={getSender(user, selectedChat?.users).pic}
                             alt="user profile"
                             className="h-full w-full rounded-full "
+                            height={35}
+                            width={35}
+                            loading="lazy"
                           />
                         ) : (
                           <FaUser color="white" size={25} />

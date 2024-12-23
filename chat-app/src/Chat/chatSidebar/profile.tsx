@@ -168,6 +168,8 @@ function Profile({
                       src={user?.pic}
                       alt="user icon"
                       className="rounded-full h-full w-full"
+                      height={180}
+                      width={180}
                     />
                   ) : (
                     <FaUser size={100} color="white" />

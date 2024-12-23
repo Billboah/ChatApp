@@ -351,6 +351,9 @@ function ChatInfo() {
                       src={getSender(user, selectedChat.users).pic}
                       alt="sender icon"
                       className=" h-full w-full rounded-full"
+                      height={180}
+                      width={180}
+                      loading="lazy"
                     />
                   ) : (
                     <FaUser size={100} color="white" />
@@ -407,6 +410,9 @@ function ChatInfo() {
                             src={participant.pic}
                             alt="Profile"
                             className="w-full h-full rounded-full"
+                            height={30}
+                            width={30}
+                            loading="lazy"
                           />
                         ) : (
                           <FaUser size={20} color="white" />
@@ -478,6 +484,9 @@ function ChatInfo() {
                               src={chat?.pic}
                               alt="group profile image"
                               className="w-full h-full rounded-full "
+                              height={30}
+                              width={30}
+                              loading="lazy"
                             />
                           ) : (
                             <FaUserFriends color="white" size={20} />

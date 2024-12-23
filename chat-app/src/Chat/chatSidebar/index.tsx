@@ -137,9 +137,13 @@ export default function chatSidebar({
             {user?.pic ? (
               <img
                 src={user?.pic}
-                alt=""
-                className=" h-full w-full rounded-full"
+                alt="user icon"
+                className="h-full w-full rounded-full"
                 title="Profile"
+                height={35}
+                width={35}
+                loading="lazy"
+                aria-label="user icon"
               />
             ) : (
               <FaUser color="white" size={25} />

@@ -79,6 +79,9 @@ const DisplayMessages: React.FC<Props> = ({ groupedMessages }) => {
                                   src={message.sender.pic}
                                   alt="sender pic"
                                   className="h-[20px] w-[20px] rounded-full "
+                                  height={20}
+                                  width={20}
+                                  loading="lazy"
                                 />
                               ) : (
                                 <FaUser size={15} color="white" />

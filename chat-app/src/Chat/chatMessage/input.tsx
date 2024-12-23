@@ -29,7 +29,7 @@ const Input: React.FC<Props> = ({ typingLogic, handleStopTyping }) => {
 
   //send a message
   const sendMessage = (e: React.FormEvent<HTMLFormElement>) => {
-    //socket.emit('stop typing', selectedChat?._id);
+    socket.emit('stop typing', selectedChat?._id);
 
     e.preventDefault();
 

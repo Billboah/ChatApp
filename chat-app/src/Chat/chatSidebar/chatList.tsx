@@ -1,8 +1,7 @@
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import React, { Dispatch, SetStateAction, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   setError,
-  setHasMore,
   setMessagesLoading,
   setSelectedChat,
   unsetUnreadMessages,
@@ -140,7 +139,6 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
         }
       }
     } else {
-      //socket.emit('join chat', selectedChat && selectedChat._id);
       return fetchMessages(chat._id);
     }
   };
@@ -183,6 +181,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
                   src={chat?.pic}
                   alt="group profile image"
                   className="w-[40px] h-[40px] rounded-full "
+                  loading="lazy"
                 />
               ) : (
                 <FaUserFriends color="white" size={25} />
@@ -224,6 +223,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
                     src={getSender(user, chat?.users).pic}
                     alt="sender profile  image"
                     className="w-[40px] h-[40px] rounded-full "
+                    loading="lazy"
                   />
                 ) : (
                   <FaUser size={25} color="white" />

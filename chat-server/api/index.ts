@@ -1,6 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
 import { createServer } from "http";
 import dotenv from "dotenv";
 import connectDB from "../config/db";
@@ -8,6 +7,7 @@ import userRouter from "../routes/userRoutes";
 import chatRouter from "../routes/chatRoutes";
 import messageRouter from "../routes/messageRoute";
 import { Server } from "socket.io";
+import { error_handler } from "../middleware/error";
 
 dotenv.config();
 
@@ -85,14 +85,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.log(` ${err.message}`);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    status: "error",
-    message: err.message || "Internal Server Error",
-  });
-});
+app.use(error_handler);
 
 httpServer.listen(port, () => {
   console.log(`Server running on port ${port}`);

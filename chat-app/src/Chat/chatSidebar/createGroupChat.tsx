@@ -117,7 +117,13 @@ function CreateGroupChat() {
               <label htmlFor="createGroupInput">
                 <div className="flex justify-center items-center h-full w-full rounded-full border border-gray-400  bg-white cursor-pointer">
                   {pic ? (
-                    <img src={pic} className="h-full w-full rounded-full" />
+                    <img
+                      src={pic}
+                      className="h-full w-full rounded-full"
+                      height={40}
+                      width={40}
+                      loading="lazy"
+                    />
                   ) : (
                     <FaCamera color="gray" />
                   )}
