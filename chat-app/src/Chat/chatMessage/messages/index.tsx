@@ -134,7 +134,7 @@ const Messages: React.FC<Props> = ({ contentRef, scrollContainerRef }) => {
   }, [autoScroll]);
 
   return (
-    <div className={` w-full h-full py-5`} ref={contentRef}>
+    <div className={`flex-1 h-full py-5`} ref={contentRef}>
       <DisplayMessages groupedMessages={groupedRegMessages} />
       {unreadMessages.length > 0 && (
         <div ref={unreadRef}>

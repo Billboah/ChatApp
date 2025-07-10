@@ -135,7 +135,7 @@ export default function chatSidebar({
             className="flex justify-center items-center bg-gray-400 rounded-full h-[35px] w-[35px]"
           >
             {user?.pic ? (
-              <img
+               <img
                 src={user?.pic}
                 alt="user icon"
                 className="h-full w-full rounded-full"

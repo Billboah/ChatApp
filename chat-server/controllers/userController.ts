@@ -10,7 +10,9 @@ export const signupController = async (
   next: NextFunction
 ) => {
   const { name, username, email, password, pic, confirmPassword } = req.body;
-
+ console.log(`${req.method} ${req.path}`);
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Body:', req.body);
   try {
     if (!name || !email || !password || !username || !confirmPassword) {
       res.status(400);

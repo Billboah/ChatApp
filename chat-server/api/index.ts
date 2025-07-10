@@ -14,7 +14,11 @@ dotenv.config();
 connectDB();
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+  })
+);
 app.use(express.json());
 
 app.use("/api/user", userRouter);
@@ -40,48 +44,51 @@ io.on("connection", (socket) => {
   console.log("Connected to socket.io");
 
   socket.on("user connected", (userId) => {
-    if (users.has(userId)) {
-      const previousSocketId = users.get(userId);
-      io.sockets.sockets.get(previousSocketId)?.disconnect(); // Disconnect the previous socket
+    if (!users.has(userId)) {
+      users.set(userId, socket.id);
+      socket.emit("connected");
     }
-    users.set(userId, socket.id);
-    socket.emit("connected");
   });
 
   socket.on("disconnect", () => {
-    users.forEach((id, userId) => {
-      if (id === socket.id) {
+    for (const [userId, socketId] of users.entries()) {
+      if (socketId === socket.id) {
         users.delete(userId);
+        break;
       }
-    });
+    }
   });
 
+  //join chat room
   socket.on("join chat", (room) => {
     socket.join(room);
   });
 
-  socket.on("send message", (messageReceived) => {
-    const chat = messageReceived.chat;
-
-    if (!chat.users) return;
-
-    chat.users.forEach((user: any) => {
-      if (user._id === messageReceived.sender._id) return;
-
-      const recipientSocketId = users.get(user._id);
-
-      if (recipientSocketId) {
-        io.to(recipientSocketId).emit("received message", messageReceived);
-      }
-    });
+  //Leave chat room
+  socket.on("leave chat", (room) => {
+    socket.leave(room);
   });
 
-  socket.on("typing", (sender, room) => {
-    socket.to(room).emit("typing", sender);
+  //Send message
+  socket.on("send message", (message) => {
+    const chatId = message?.chat?._id;
+    if (!chatId) return;
+
+    socket.to(chatId).emit("received message", message);
   });
 
-  socket.on("stop typing", (room) => {
-    socket.to(room).emit("stop typing");
+  // Typing
+  socket.on("typing", (sender, chatId) => {
+    if (sender && chatId) {
+      socket.to(chatId).emit("typing", { chatId, sender });
+    }
+  });
+
+  // Stop typing
+  socket.on("stop typing", (senderId, chatId) => {
+    if (senderId && chatId) {
+      socket.to(chatId).emit("stop typing", { chatId, senderId });
+    }
   });
 });
 

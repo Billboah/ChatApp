@@ -8,7 +8,9 @@ import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
 import SearchResult from '../../components/serchResult';
-import { User } from '../../types';
+import { Chat, User } from '../../types';
+import { apiPost } from '../../utils/api';
+import { handleImage } from '../../utils/cloudinary';
 
 function CreateGroupChat() {
   const dispatch = useDispatch();
@@ -28,7 +30,7 @@ function CreateGroupChat() {
       : setChatList([...chatList, user]);
 
   //create group chat
-  const handleCreateGroup = () => {
+  const handleCreateGroup = async () => {
     setCreateGroupLoading(true);
     const config: AxiosRequestConfig<any> = {
       headers: {
@@ -38,44 +40,21 @@ function CreateGroupChat() {
 
     const users = JSON.stringify(chatList.map((user) => user._id));
 
-    axios
-      .post(`${BACKEND_API}/api/chat/group`, { users, name, pic }, config)
-      .then((response) => {
-        dispatch(setSelectedChat(response.data));
-        dispatch(updateChat(response.data));
-        dispatch(setNewGroup(false));
-        setCreateGroupLoading(false);
-      })
-      .catch((error) => {
-        setCreateGroupLoading(false);
-        if (error.response) {
-          setError(error.response.data.message);
-        } else if (error.request) {
-          console.error('No response received:', error.request);
-          alert('Network error, please try again later.');
-        } else {
-          console.error('Error:', error.message);
-          setError('An error occurred, please try again.');
-        }
-      });
-  };
-
-  //handle file
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError('');
-    const fileInput = e.target;
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-      return;
+    const result = await apiPost(
+      '/api/chat/group',
+      { users, name, pic },
+      config,
+      setCreateGroupLoading,
+      dispatch,
+    );
+    if (result) {
+      const chat = result as Chat;
+      dispatch(setSelectedChat(chat));
+      dispatch(updateChat(chat));
+      dispatch(setNewGroup(false));
     }
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataURL = reader.result as string;
-      setPic(dataURL);
-    };
-    reader.readAsDataURL(file);
   };
+
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -134,7 +113,10 @@ function CreateGroupChat() {
                 className="hidden h-full w-full"
                 type="file"
                 accept="image/*"
-                onChange={handleFileChange}
+                onChange={async (e) => {
+                  const img = await handleImage(e);
+                  setPic(img ?? undefined);
+                }}
               />
             </div>
           </div>

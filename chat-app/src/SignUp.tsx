@@ -1,90 +1,76 @@
-import axios from 'axios';
 import React, { useState } from 'react';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import { Link, useNavigate } from 'react-router-dom';
 import { setUser } from './state/reducers/auth';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FadeLoading } from './config/ChatLoading';
-import { BACKEND_API } from './config/chatLogics';
-import { setCurrentUser } from './state/reducers/chat';
+import { setCurrentUser, setError } from './state/reducers/chat';
+import { apiPost } from './utils/api';
+import { User } from './types';
+import { RootState } from './state/reducers';
+import { handleImage } from './utils/cloudinary';
 
 type PicStateType = string | undefined;
 
 function SignUp() {
+  const { generalError } = useSelector((state: RootState) => state.chat);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [username, setUsername] = useState('');
-  const [signUpError, setSignUpError] = useState('');
   const [name, setFullname] = useState('');
   const [pic, setPic] = useState<PicStateType>(undefined);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
-    axios
-      .post(`${BACKEND_API}/api/user/signup`, {
-        username,
-        name,
-        email,
-        password,
-        confirmPassword,
-        pic,
-      })
-      .then(function (response) {
-        dispatch(setUser(response.data));
-        dispatch(setCurrentUser(response.data));
-        navigate('/');
-        setLoading(false);
-      })
-      .catch(function (error) {
-        setLoading(false);
-        if (error.response) {
-          setSignUpError(error.response.data.message);
-        } else if (error.request) {
-          console.error('No response received:', error.request);
-          alert('Network error, please try again later.');
-        } else {
-          console.error('Error:', error.message);
-          alert('An error occurred, please try again.');
-        }
-      });
-  };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileInput = e.target;
-    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+    if (!username || !name || !email || !password || !confirmPassword) {
+      dispatch(setError('All fields are required.'));
       return;
     }
 
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataURL = reader.result as string;
-
-      setPic(dataURL);
-    };
-    reader.readAsDataURL(file);
+    if (password !== confirmPassword) {
+      dispatch(setError('Passwords do not match.'));
+      return;
+    }
+      const result = await apiPost(
+        '/api/user/signup',
+        {
+          username,
+          name,
+          email,
+          password,
+          confirmPassword,
+          pic,
+        },
+        {},
+        setLoading,
+        dispatch,
+      );
+      if (result) {
+        const user = result as User;
+        dispatch(setUser(user));
+        dispatch(setCurrentUser(user));
+        navigate('/');
+      }
+    
   };
 
-  const handleShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
-  const handleShowConfirmPassword = () => {
-    setShowConfirmPassword(!showConfirmPassword);
-  };
   return (
     <div className="flex flex-col justify-center items-center h-fit min-h-screen w-full ">
       <div className="h-fit w-full min-w-[200px] max-w-[350px] px-5 py-5 flex flex-col justify-center items-center bg-white  rounded-xl relative  border-1-inherit shadow-lg m-1">
         <h1 className="font-bold mb-[20px] text-xl text-blue-600">SwiftTalk</h1>
         <h2 className="font-bold mb-[20px] text-xl">Create account</h2>
+        {generalError && (
+          <div className="text-xs mb-2 text-red-500  before:content-['*'] before:mr-0.5 before:text-red-500">
+            {generalError}
+          </div>
+        )}
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleSignIn}
           className="flex flex-col justify-center items-center mb-[10px]"
         >
           <div className="w-full h-15 flex flex-col">
@@ -100,7 +86,7 @@ function SignUp() {
               required
               value={name}
               onChange={(e) => {
-                setFullname(e.target.value), setSignUpError('');
+                setFullname(e.target.value), dispatch(setError(''));
               }}
               className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
@@ -118,7 +104,7 @@ function SignUp() {
               required
               value={username}
               onChange={(e) => {
-                setUsername(e.target.value), setSignUpError('');
+                setUsername(e.target.value), dispatch(setError(''));
               }}
               className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
@@ -136,7 +122,7 @@ function SignUp() {
               value={email}
               required
               onChange={(e) => {
-                setEmail(e.target.value), setSignUpError('');
+                setEmail(e.target.value), dispatch(setError(''));
               }}
               className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
@@ -155,37 +141,11 @@ function SignUp() {
                 value={password}
                 required
                 onChange={(e) => {
-                  setPassword(e.target.value), setSignUpError('');
+                  setPassword(e.target.value), dispatch(setError(''));
                 }}
                 className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               />
-              <button
-                type="button"
-                onClick={handleShowPassword}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  marginLeft: '-21px',
-                }}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
             </div>
-          </div>
-          <div className="w-full">
-            {signUpError ? (
-              <div className="text-xs mb-2 text-red-500  before:content-['*'] before:mr-0.5 before:text-red-500">
-                {signUpError}
-              </div>
-            ) : (
-              <div className="text-xs mb-2">
-                <p>Password must have at least 8 character. </p>
-                <p>
-                  Mix letters, symbols, and numbers to create a strong password.
-                </p>
-              </div>
-            )}
           </div>
           <div className="w-full h-15 flex flex-col">
             <label className="after:content-['*'] after:ml-0.5 after:text-red-500">
@@ -193,26 +153,37 @@ function SignUp() {
             </label>
             <div>
               <input
-                type={showConfirmPassword ? 'text' : 'password'}
+                type={showPassword ? 'text' : 'password'}
                 value={confirmPassword}
                 required
                 onChange={(e) => {
-                  setConfirmPassword(e.target.value), setSignUpError('');
+                  setConfirmPassword(e.target.value), dispatch(setError(''));
                 }}
                 className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               />
-              <button
-                type="button"
-                onClick={handleShowConfirmPassword}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  marginLeft: '-21px',
-                }}
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
+            </div>
+          </div>
+          <span className="w-full flex justify-start text-sm my-2 ml-2 ">
+            <input
+              type="checkbox"
+              className="mr-[5px] scale-150"
+              required
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setShowPassword(true);
+                } else {
+                  setShowPassword(false);
+                }
+              }}
+            />
+            Show Password
+          </span>
+          <div className="w-full">
+            <div className="text-xs text-gray-600 mb-2 mx-3 ">
+              <p>Password must have at least 8 character. </p>
+              <p>
+                Mix letters, symbols, and numbers to create a strong password.
+              </p>
             </div>
           </div>
           <div className="w-full h-15 flex flex-col">
@@ -224,11 +195,14 @@ function SignUp() {
               className="w-full  px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
               type="file"
               accept="image/*"
-              onChange={handleFileChange}
+              onChange={async (e) => {
+                const img = await handleImage(e);
+                setPic(img ?? undefined);
+              }}
             />
           </div>
-          <div className="w-full flex justify-start text-sm mt-[5px]">
-            <input type="checkbox" className="mr-[5px] " required />
+          <div className="w-full flex justify-start text-sm my-2 ml-2">
+            <input type="checkbox" className="mr-[5px] scale-150" required />
             <span className="mx-[5px]">I agree to</span>
             <span>
               <a href="#" className="text-blue-500">

@@ -17,6 +17,12 @@ interface ChatState {
   messageError: { [key: string]: boolean };
   generalError: string;
   autoScroll: boolean;
+  socketConnection: boolean;
+  typingStatus: {
+    isTyping: boolean;
+    user: User | null;
+    chatId: string | null;
+  };
 }
 
 const storedChat = localStorage.getItem('chats');
@@ -41,6 +47,12 @@ const initialState: ChatState = {
   messageError: {},
   generalError: '',
   autoScroll: false,
+  socketConnection: false,
+  typingStatus: {
+    isTyping: false,
+    user: null,
+    chatId: null,
+  },
 };
 
 const chatSlice = createSlice({
@@ -49,6 +61,9 @@ const chatSlice = createSlice({
   reducers: {
     setCurrentUser: (state, action) => {
       state.chatUser = action.payload;
+    },
+    setSocketConnected: (state, action: PayloadAction<boolean>) => {
+      state.socketConnection = action.payload;
     },
     setChats: (state, action: PayloadAction<Chat[]>) => {
       state.chats = action.payload;
@@ -67,6 +82,9 @@ const chatSlice = createSlice({
         updatedChats.unshift(currentChat);
       }
       state.chats = updatedChats;
+    },
+    setTypingStatus: (state, action) => {
+      state.typingStatus = action.payload;
     },
     setNewMessage: (
       state,
@@ -254,6 +272,8 @@ export const {
   setError,
   setHasMore,
   setAutoScroll,
+  setSocketConnected,
+  setTypingStatus,
 } = chatSlice.actions;
 
 export default chatSlice.reducer;

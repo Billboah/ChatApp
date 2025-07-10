@@ -6,88 +6,103 @@ import { useNavigate } from 'react-router-dom';
 import CreateGroupChat from './chatSidebar/createGroupChat';
 import { setInfo } from '../state/reducers/screen';
 import { RootState } from '../state/reducers';
-import axios, { AxiosRequestConfig } from 'axios';
-import { BACKEND_API } from '../config/chatLogics';
-import { setError } from '../state/reducers/chat';
+import { AxiosRequestConfig } from 'axios';
+import { socket } from '../config/chatLogics';
+import {
+  setError,
+  setSelectedChat,
+  setSocketConnected,
+} from '../state/reducers/chat';
+import { apiPut } from '../utils/api';
 
 function Chats() {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
   const { selectedChat } = useSelector((state: RootState) => state.chat);
+  const { socketConnection } = useSelector((state: RootState) => state.chat);
   const { generalError } = useSelector((state: RootState) => state.chat);
   const { newGroup } = useSelector((state: RootState) => state.screen);
   const ref = useRef<HTMLDivElement | null>(null);
   const dispatch = useDispatch();
   const { smallScreen } = useSelector((state: RootState) => state.screen);
 
+  // Socket connection effect
   useEffect(() => {
     if (!user) {
+      socket.disconnect();
+      dispatch(setSocketConnected(false));
+      return;
+    }
+
+    socket.connect();
+    socket.off('connected');
+    socket.on('connected', () => dispatch(setSocketConnected(true)));
+    socket.emit('user connected', user._id);
+
+    return () => {
+      socket.emit('user disconnected', user._id);
+      socket.disconnect();
+      dispatch(setSocketConnected(false));
+      socket.off('connected');
+    };
+  }, [user]);
+
+  // changeSelectedChat callback
+  const changeSelectedChat = useCallback(
+    async (selectedChatId: string | null) => {
+      if (!user?.token) return;
+
+      const config: AxiosRequestConfig<any> = {
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+      };
+
+      if (selectedChatId) {
+        await apiPut(
+          '/api/user/updateselectedchat',
+          { selectedChatId },
+          config,
+          undefined,
+          dispatch,
+        );
+        socketConnection && socket.emit('join chat', selectedChatId);
+      } else {
+        socketConnection && socket.emit('leave chat');
+      }
+    },
+    [user?.token, dispatch],
+  );
+
+  //  changeSelectedChat on selectedChat change
+  useEffect(() => {
+    const selectedChatId = selectedChat ? selectedChat._id : null;
+    changeSelectedChat(selectedChatId);
+  }, [selectedChat]);
+
+  // If not logged in, redirect to sign-in
+  useEffect(() => {
+    if (!user) {
+      changeSelectedChat(null);
+      dispatch(setSelectedChat(null));
       navigate('/signin');
     }
   }, [user]);
 
-  const changeSelectedChat = useCallback(
-    (selectedChatId: string | null) => {
-      if (user?.token) {
-        const config: AxiosRequestConfig<any> = {
-          headers: {
-            Authorization: `Bearer ${user?.token}`,
-          },
-        };
-
-        axios
-          .put(
-            `${BACKEND_API}/api/user/updateselectedchat`,
-            { selectedChatId },
-            config,
-          )
-          .then(() => {
-            console.log('This is right');
-          })
-          .catch((error) => {
-            if (error.response) {
-              dispatch(setError(error.response.data.message));
-            } else if (error.request) {
-              console.error('No response received:', error.request);
-              dispatch(setError('Network error, please try again later.'));
-            } else {
-              console.error('Error:', error.message);
-              dispatch(setError('An error occurred, please try again.'));
-            }
-          });
-      }
-    },
-    [user?.token],
-  );
-
+  //Online/offline and unload events
   useEffect(() => {
-    const selectedChatId = selectedChat ? selectedChat._id : null;
+    const handleOnline = () => dispatch(setError(''));
+    const handleOffline = () =>
+      dispatch(setError('Check your internet connection'));
 
-    changeSelectedChat(selectedChatId);
-  }, [selectedChat]);
-
-  //handle disconnection and tab close
-  useEffect(() => {
-    const selectedChatId = selectedChat ? selectedChat._id : null;
-
-    const handleOnline = () => {
-      dispatch(setError(''));
-    };
-
-    const handleOffline = () => {
-      dispatch(setError('Check you internet connection'));
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      changeSelectedChat(null);
+      event.preventDefault();
+      event.returnValue = 'You are closing the app';
     };
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
-
-    // Detect tab close or navigation away
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      changeSelectedChat(selectedChatId);
-      event.preventDefault();
-      event.returnValue = 'You are closing the app'; // Required to prompt the user
-    };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {

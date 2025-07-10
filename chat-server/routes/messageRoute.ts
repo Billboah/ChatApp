@@ -14,4 +14,4 @@ router.get("/:chatId", authenticate, getChatMessages);
 
 router.get("unreadmessage/:chatId", authenticate, getUnreadMessages);
 
-export default router;
+export default router; 

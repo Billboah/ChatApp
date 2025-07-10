@@ -1,17 +1,17 @@
-import axios from 'axios';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setUser } from './state/reducers/auth';
 import { FadeLoading } from './config/ChatLoading';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import { BACKEND_API } from './config/chatLogics';
-import { setCurrentUser } from './state/reducers/chat';
+import { setCurrentUser, setError } from './state/reducers/chat';
+import { RootState } from './state/reducers';
+import { apiPost } from './utils/api';
+import { User } from './types';
 
 export default function SignIn() {
+    const { generalError } = useSelector((state: RootState) => state.chat);
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-  const [signInError, setSignInError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
@@ -20,33 +20,15 @@ export default function SignIn() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     setLoading(true);
     e.preventDefault();
-    axios
-      .post(`${BACKEND_API}/api/user/signin`, {
-        name,
-        password,
-      })
-      .then(function (response) {
-        dispatch(setUser(response.data));
-        dispatch(setCurrentUser(response.data));
-        navigate('/');
-        setLoading(false);
-      })
-      .catch(function (error) {
-        setLoading(false);
-        if (error.response) {
-          setSignInError(error.response.data.message);
-        } else if (error.request) {
-          console.error('No response received:', error.request);
-          alert('Network error, please try again later.');
-        } else {
-          console.error('Error:', error.message);
-          alert('An error occurred, please try again.');
-        }
-      });
-  };
-
-  const handleShowPassword = () => {
-    setShowPassword(!showPassword);
+    const result = await apiPost(
+      '/api/user/signin', {name, password}, {}, setLoading, dispatch)
+    
+      if (result) {
+        const user = result as User;
+        dispatch(setUser(user)); 
+        dispatch(setCurrentUser(user));
+        navigate('/');    
+      }  
   };
 
   return (
@@ -54,6 +36,13 @@ export default function SignIn() {
       <div className="h-fit w-full min-w-[200px] max-w-[350px] px-5 py-5 flex flex-col justify-center items-center bg-white rounded-xl relative  border-1-inherit shadow-lg m-1">
         <h1 className="font-bold mb-[20px] text-xl text-blue-600">SwiftTalk</h1>
         <h2 className="font-bold mb-[20px] text-xl">Sign In</h2>
+        <div className="">
+            {generalError && (
+              <p className="text-xs text-red-500 before:content-['*'] before:text-red-500">
+                {generalError}
+              </p>
+            )}
+          </div>
         <form
           action=""
           onSubmit={handleSubmit}
@@ -71,7 +60,7 @@ export default function SignIn() {
               type="text"
               required
               onChange={(e) => {
-                setName(e.target.value), setSignInError('');
+                setName(e.target.value), setError('');
               }}
               className="w-full px-[10px] py-[5px] rounded border border-gray-400  bg-gray-100 outline-none"
             />
@@ -90,40 +79,28 @@ export default function SignIn() {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => {
-                  setPassword(e.target.value), setSignInError('');
+                  setPassword(e.target.value), setError('');
                 }}
                 required
               />
-              <button
-                type="button"
-                onClick={handleShowPassword}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  marginLeft: '-21px',
-                }}
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </button>
             </div>
           </div>
-          <div className="">
-            {signInError && (
-              <p className="text-xs text-red-500 before:content-['*'] before:text-red-500">
-                {signInError}
-              </p>
-            )}
-          </div>
-          <div className="w-full text-sm flex justify-between items-center mt-[5px]">
-            <div className="flex items-center">
-              <input type="checkbox" />
-              <span className="ml-[5px]">Remember me</span>
-            </div>
-            <a href="#" className="text-blue-500">
-              Forgot password?
-            </a>
-          </div>
+          <span className="w-full flex justify-start text-sm my-2 ml-2 ">
+            <input
+              type="checkbox"
+              className="mr-[5px] scale-150"
+              required
+              onChange={(e) => {
+                if (e.target.checked) {
+                  setShowPassword(true);
+                } else {
+                  setShowPassword(false);
+                }
+              }}
+            />
+            Show Password
+          </span>
+          
           <button
             disabled={loading}
             type="submit"

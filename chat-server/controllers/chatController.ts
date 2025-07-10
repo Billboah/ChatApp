@@ -234,9 +234,9 @@ export const changeGroupIconController = async (
 
 //remove a group member
 export const removeMemberController = async (
-  next: NextFunction,
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const { chatId, userId }: { chatId: string; userId: string } = req.body;
@@ -270,9 +270,9 @@ export const removeMemberController = async (
 
 //add a group member/members
 export const addMemberController = async (
-  next: NextFunction,
   req: CustomRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const users: user[] = JSON.parse(req.body.userIds);
