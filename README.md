@@ -120,7 +120,7 @@ The app is highly responsive, easy to navigate, and perfect for all groups of pe
 
 ## 📄 License
 
-© 2025 [Your Name]. All rights reserved.  
+© 2025 Billboah. All rights reserved.  
 This project is proprietary and not licensed for redistribution or commercial use without permission.
 
 ---
