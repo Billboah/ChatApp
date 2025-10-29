@@ -15,7 +15,7 @@
   },
   "include": [
     "/**/*.ts",
-    "api/index.ts"
+    "server.ts"
   ],
   "exclude": [
     "node_modules",

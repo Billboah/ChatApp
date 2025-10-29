@@ -2,17 +2,15 @@ import { NextFunction, Response } from "express";
 import { User } from "../models/userModels";
 import generateToken from "../config/generateToken";
 import { CustomRequest } from "../config/express";
-import { Message } from "../models/messageModel";
 
+//user signup
 export const signupController = async (
   req: CustomRequest,
   res: Response,
   next: NextFunction
 ) => {
   const { name, username, email, password, pic, confirmPassword } = req.body;
- console.log(`${req.method} ${req.path}`);
-  console.log('Content-Type:', req.headers['content-type']);
-  console.log('Body:', req.body);
+
   try {
     if (!name || !email || !password || !username || !confirmPassword) {
       res.status(400);
@@ -54,6 +52,7 @@ export const signupController = async (
   }
 };
 
+//user signin
 export const signInController = async (
   req: CustomRequest,
   res: Response,
@@ -90,6 +89,7 @@ export const signInController = async (
   }
 };
 
+//
 export const searchUsersController = async (
   req: CustomRequest,
   res: Response,
@@ -115,6 +115,7 @@ export const searchUsersController = async (
   }
 };
 
+//change username
 export const changeUserName = async (
   req: CustomRequest,
   res: Response,
@@ -153,6 +154,7 @@ export const changeUserName = async (
   }
 };
 
+//change profile picture
 export const changePicController = async (
   req: CustomRequest,
   res: Response,
@@ -186,42 +188,6 @@ export const changePicController = async (
       unreadMessages: updatedUser.unreadMessages,
       token: generateToken(updatedUser._id),
     });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const updateSelectedChat = async (
-  req: CustomRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const { selectedChatId } = req.body;
-  const userId = req.user._id;
-
-  try {
-    if (!userId) {
-      return res.status(400).json({ error: "User authentication required" });
-    }
-    if (selectedChatId) {
-      await User.findByIdAndUpdate(
-        userId,
-        {
-          selectedChat: selectedChatId,
-        },
-        { new: true }
-      );
-    } else {
-      await User.findByIdAndUpdate(
-        userId,
-        {
-          selectedChat: null,
-        },
-        { new: true }
-      );
-    }
-
-    res.json();
   } catch (error) {
     next(error);
   }

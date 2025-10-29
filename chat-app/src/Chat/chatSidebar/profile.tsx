@@ -16,11 +16,7 @@ import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import { BACKEND_API } from '../../config/chatLogics';
 
-function Profile({
-  changeSelectedChat,
-}: {
-  changeSelectedChat: (selectedChatId: string | null) => void;
-}) {
+function Profile() {
   const { user } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
   const [isHovered, setIsHovered] = useState(false);
@@ -31,7 +27,6 @@ function Profile({
 
   //logout
   const handleLogout = () => {
-    changeSelectedChat(null);
     dispatch(logoutUser());
     dispatch(setProfile(null));
     dispatch(signOut());

@@ -15,9 +15,9 @@ import {
   setNewMessage,
   setTypingStatus,
 } from '../../state/reducers/chat';
-import { socket } from '../../config/chatLogics';
 import { apiPost } from '../../utils/api';
 import { Message, User } from '../../types';
+import socket from '../../socket/socket';
 
 const Input: React.FC = () => {
   const { selectedChat } = useSelector((state: RootState) => state.chat);
@@ -30,21 +30,15 @@ const Input: React.FC = () => {
     return uuidv4();
   }
 
+  // Send message via socket
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
+    if (!input.trim() || !user || !selectedChat) return;
 
-    if (!input.trim()) return;
-    if (!user) return;
-
-    emitStopTyping(); // always stop typing before sending
+    emitStopTyping();
 
     const currentTime = new Date();
     const tempId = generateClientId();
-
-    if (!selectedChat) {
-      dispatch(setMessageError({ id: tempId, hasError: true }));
-      return;
-    }
 
     const inputMessage: Message = {
       _id: tempId,
@@ -55,66 +49,51 @@ const Input: React.FC = () => {
       updatedAt: currentTime.toISOString(),
     };
 
+    // Optimistically add to chat UI
     dispatch(setNewMessage({ tempId, message: inputMessage }));
 
-    const config = {
-      headers: {
-        Authorization: `Bearer ${user?.token}`,
-      },
-    };
-
-    const result: Message | null = await apiPost(
-      '/api/message/',
+    // Send message via socket (auth token already attached to connection)
+    socket.emit(
+      'send message',
       {
-        chatId: selectedChat?._id,
+        chatId: selectedChat._id,
         content: inputMessage.content,
+        senderId: user._id,
       },
-      config,
-      undefined,
-      dispatch,
+      (response: { success: boolean; message?: Message }) => {
+        if (response?.success && response.message) {
+          dispatch(setNewMessage({ tempId, message: response.message }));
+        } else {
+          dispatch(setMessageError({ id: tempId, hasError: true }));
+        }
+      },
     );
-
-    if (result) {
-      dispatch(setNewMessage({ tempId, message: result }));
-      socket.emit('send message', result);
-    } else {
-      dispatch(setMessageError({ id: tempId, hasError: true }));
-    }
 
     setInput('');
     const textarea = document.getElementById(
       'input',
     ) as HTMLTextAreaElement | null;
-    if (textarea) {
-      adjustTextareaHeight(textarea);
-    }
+    if (textarea) adjustTextareaHeight(textarea);
   };
 
+  // Typing events
   const emitTyping = () => {
-    if (selectedChat && user) {
-      socket.emit('typing', user, selectedChat._id);
-    }
+    if (selectedChat && user) socket.emit('typing', user, selectedChat._id);
   };
 
   const emitStopTyping = () => {
-    if (selectedChat && user) {
+    if (selectedChat && user)
       socket.emit('stop typing', user._id, selectedChat._id);
-    }
   };
 
+  // Handle input
   const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     adjustTextareaHeight(e.target);
-
-    // Emit typing
     emitTyping();
 
-    // Clear previous timeout and start a new one
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-    timeoutRef.current = setTimeout(() => {
-      emitStopTyping();
-    }, 10000); // stop typing after 10s of inactivity
+    timeoutRef.current = setTimeout(() => emitStopTyping(), 10000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -124,10 +103,9 @@ const Input: React.FC = () => {
     }
   };
 
-  const handleBlur = () => {
-    emitStopTyping(); // stop typing on input blur
-  };
+  const handleBlur = () => emitStopTyping();
 
+  // Auto-resize
   const adjustTextareaHeight = (textarea: HTMLTextAreaElement) => {
     textarea.style.minHeight = '30px';
     textarea.style.height = '30px';
@@ -135,7 +113,7 @@ const Input: React.FC = () => {
     textarea.style.maxHeight = '120px';
   };
 
-  // Listen for typing and stop typing events from socket
+  // Listen for typing events
   useEffect(() => {
     const handleTyping = ({
       chatId,
@@ -144,13 +122,7 @@ const Input: React.FC = () => {
       chatId: string;
       sender: User | null;
     }) => {
-      dispatch(
-        setTypingStatus({
-          isTyping: true,
-          user: sender,
-          chatId: chatId,
-        }),
-      );
+      dispatch(setTypingStatus({ isTyping: true, user: sender, chatId }));
     };
 
     const handleStopTyping = ({
@@ -160,13 +132,7 @@ const Input: React.FC = () => {
       chatId: string;
       senderId: string;
     }) => {
-      dispatch(
-        setTypingStatus({
-          isTyping: false,
-          user: null,
-          chatId: null,
-        }),
-      );
+      dispatch(setTypingStatus({ isTyping: false, user: null, chatId: null }));
     };
 
     socket.on('typing', handleTyping);
@@ -176,7 +142,7 @@ const Input: React.FC = () => {
       socket.off('typing', handleTyping);
       socket.off('stop typing', handleStopTyping);
     };
-  });
+  }, [dispatch]);
 
   return (
     <div className="bg-gray-200 w-full h-fit px-4 py-4">

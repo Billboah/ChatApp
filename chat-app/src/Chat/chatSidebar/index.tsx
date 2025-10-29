@@ -21,11 +21,7 @@ import ChatList from './chatList';
 import { Chat, User } from '../../types';
 import { SkeletonLoading } from '../../config/ChatLoading';
 
-export default function chatSidebar({
-  changeSelectedChat,
-}: {
-  changeSelectedChat: (selectedChatId: string | null) => void;
-}) {
+export default function chatSidebar() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const { profile } = useSelector((state: RootState) => state.screen);
@@ -135,7 +131,7 @@ export default function chatSidebar({
             className="flex justify-center items-center bg-gray-400 rounded-full h-[35px] w-[35px]"
           >
             {user?.pic ? (
-               <img
+              <img
                 src={user?.pic}
                 alt="user icon"
                 className="h-full w-full rounded-full"
@@ -221,7 +217,7 @@ export default function chatSidebar({
         }
          `}
       >
-        <Profile changeSelectedChat={changeSelectedChat} />
+        <Profile />
       </div>
     </div>
   );

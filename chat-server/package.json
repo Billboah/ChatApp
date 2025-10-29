@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon api/index.ts",
+    "start": "nodemon server.ts",
     "build": "tsc --noEmit && mkdir -p public && tsc --outDir public",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

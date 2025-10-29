@@ -1,131 +1,88 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import ChatSidebar from './chatSidebar';
 import ChatMessages from './chatMessage';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import CreateGroupChat from './chatSidebar/createGroupChat';
-import { setInfo } from '../state/reducers/screen';
 import { RootState } from '../state/reducers';
-import { AxiosRequestConfig } from 'axios';
-import { socket } from '../config/chatLogics';
 import {
   setError,
   setSelectedChat,
   setSocketConnected,
 } from '../state/reducers/chat';
-import { apiPut } from '../utils/api';
+import socket from '../socket/socket';
+import { useNavigate } from 'react-router-dom';
 
 function Chats() {
-  const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { selectedChat } = useSelector((state: RootState) => state.chat);
-  const { socketConnection } = useSelector((state: RootState) => state.chat);
   const { generalError } = useSelector((state: RootState) => state.chat);
   const { newGroup } = useSelector((state: RootState) => state.screen);
   const ref = useRef<HTMLDivElement | null>(null);
   const dispatch = useDispatch();
   const { smallScreen } = useSelector((state: RootState) => state.screen);
+  const navigate = useNavigate();
 
-  // Socket connection effect
   useEffect(() => {
+    // 1️⃣ If no user → clean up and redirect
+    console.log(user);
     if (!user) {
+      socket.emit('leave chat', null);
+      socket.emit('user disconnected');
       socket.disconnect();
+
+      dispatch(setSelectedChat(null));
       dispatch(setSocketConnected(false));
+
+      navigate('/signin');
       return;
     }
 
-    socket.connect();
-    socket.off('connected');
-    socket.on('connected', () => dispatch(setSocketConnected(true)));
-    socket.emit('user connected', user._id);
-
-    return () => {
-      socket.emit('user disconnected', user._id);
-      socket.disconnect();
-      dispatch(setSocketConnected(false));
-      socket.off('connected');
-    };
-  }, [user]);
-
-  // changeSelectedChat callback
-  const changeSelectedChat = useCallback(
-    async (selectedChatId: string | null) => {
-      if (!user?.token) return;
-
-      const config: AxiosRequestConfig<any> = {
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-        },
-      };
-
-      if (selectedChatId) {
-        await apiPut(
-          '/api/user/updateselectedchat',
-          { selectedChatId },
-          config,
-          undefined,
-          dispatch,
-        );
-        socketConnection && socket.emit('join chat', selectedChatId);
-      } else {
-        socketConnection && socket.emit('leave chat');
-      }
-    },
-    [user?.token, dispatch],
-  );
-
-  //  changeSelectedChat on selectedChat change
-  useEffect(() => {
-    const selectedChatId = selectedChat ? selectedChat._id : null;
-    changeSelectedChat(selectedChatId);
-  }, [selectedChat]);
-
-  // If not logged in, redirect to sign-in
-  useEffect(() => {
-    if (!user) {
-      changeSelectedChat(null);
-      dispatch(setSelectedChat(null));
-      navigate('/signin');
+    // 2️⃣ Connect socket with authentication
+    if (!socket.connected) {
+      socket.auth = { token: user?.token }; // Set auth token
+      socket.connect();
     }
-  }, [user]);
 
-  //Online/offline and unload events
-  useEffect(() => {
+    // 3️⃣ Once connected → identify the user
+    socket.on('connect', () => {
+      socket.emit('user connected', user?._id);
+      dispatch(setSocketConnected(true));
+    });
+
+    // 4️⃣ Handle disconnection
+    socket.on('disconnect', () => {
+      dispatch(setSocketConnected(false));
+    });
+
+    // 5️⃣ Online/offline feedback
     const handleOnline = () => dispatch(setError(''));
     const handleOffline = () =>
       dispatch(setError('Check your internet connection'));
 
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      changeSelectedChat(null);
-      event.preventDefault();
-      event.returnValue = 'You are closing the app';
+    // 6️⃣ Before closing or leaving the page
+    const handleBeforeUnload = () => {
+      if (user?._id) {
+        socket.emit('user disconnected', user._id);
+      }
+      socket.emit('leave chat', null); // Leave any joined chat room
+      socket.disconnect();
+
+      dispatch(setSelectedChat(null));
     };
 
+    // 7️⃣ Register browser events
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
+    // 8️⃣ Cleanup
     return () => {
+      socket.off('connect');
+      socket.off('disconnect');
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, []);
-
-  // handle click outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        dispatch(setInfo(false));
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
+  }, [user]);
   //handle error disappearing
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -146,7 +103,7 @@ function Chats() {
               smallScreen ? 'block h-full w-full' : 'hidden'
             } md:block md:w-[350px] `}
           >
-            <ChatSidebar changeSelectedChat={changeSelectedChat} />
+            <ChatSidebar />
           </div>
           <div
             ref={ref}

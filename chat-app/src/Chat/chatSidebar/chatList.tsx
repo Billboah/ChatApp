@@ -198,9 +198,9 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
                 {chat?.latestMessage && (
                   <p className="text-xs text-left w-full line-clamp-2">
                     <span className="font-semibold capitalize">
-                      {chat.latestMessage.sender._id === user?._id
+                      {chat.latestMessage.sender?._id === user?._id
                         ? 'You'
-                        : chat.latestMessage.sender.username}
+                        : chat.latestMessage.sender?.username}
                       :{' '}
                     </span>
                     <span

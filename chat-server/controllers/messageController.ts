@@ -1,65 +1,7 @@
 import { NextFunction, Response } from "express";
-import { Chat } from "../models/chatModel";
 import { Message } from "../models/messageModel";
 import { User } from "../models/userModels";
 import { CustomRequest } from "../config/express";
-import { AnyAaaaRecord } from "dns";
-
-//send message
-export const sendMessage = async (
-  req: CustomRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const { content, chatId }: { content: string; chatId: string } = req.body;
-
-  if (!content || !chatId) {
-    throw new Error("Invalid data passed into request");
-  }
-
-  const newMessage = {
-    sender: req.user._id,
-    content: content,
-    chat: chatId,
-    delivered: true,
-  };
-
-  try {
-    const message = await Message.create(newMessage);
-
-    await message.populate("sender", "username pic email");
-    await message.populate("chat");
-    await User.populate(message.chat, {
-      path: "users",
-      select: "username pic email selectedChat unreadMessages",
-    });
-
-    await Chat.findByIdAndUpdate(chatId, {
-      latestMessage: message,
-    });
-
-    const chat = await Chat.findOne({ _id: chatId });
-
-    const usersInChat = chat.users;
-
-    await User.updateMany(
-      {
-        _id: { $in: usersInChat },
-        selectedChat: { $ne: chatId },
-      },
-      {
-        $push: { unreadMessages: message },
-      },
-      {
-        new: true,
-      }
-    );
-
-    res.json(message);
-  } catch (error) {
-    next(error);
-  }
-};
 
 //get all messages
 export const getChatMessages = async (
@@ -84,6 +26,7 @@ export const getChatMessages = async (
 
     const unreadMessageIds = user.unreadMessages;
 
+    // Fetch unread messages first
     const unreadMessages = await Message.find({
       chat: chatId,
       _id: { $in: unreadMessageIds },
@@ -109,6 +52,7 @@ export const getChatMessages = async (
       filter["_id"] = { $lt: lastMessageId };
     }
 
+    // Fetch regular messages with pagination
     const regularMessages = await Message.find(filter)
       .sort({ _id: -1 })
       .limit(limit)
@@ -121,7 +65,7 @@ export const getChatMessages = async (
         },
       })
       .exec();
-
+    // Remove fetched unread messages from user's unreadMessages
     const fetchedUnreadMessageIds = unreadMessages.map((msg) =>
       msg._id.toString()
     );

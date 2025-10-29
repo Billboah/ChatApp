@@ -13,7 +13,8 @@ import { RootState } from '../../state/reducers';
 import { ClipLoading } from '../../config/ChatLoading';
 import { apiGet } from '../../utils/api';
 import Header from './header';
-import { socket } from '../../config/chatLogics';
+import { Message } from '../../types';
+import socket from '../../socket/socket';
 
 const chatMessages: React.FC = () => {
   const dispatch = useDispatch();
@@ -35,7 +36,7 @@ const chatMessages: React.FC = () => {
     (chat: any) => chat._id === selectedChat?._id,
   );
 
-  //api for messages of a chat
+  // Fetch messages api
   const fetchMessages = async (lastId: string) => {
     const chatId = selectedChat?._id;
 
@@ -54,8 +55,10 @@ const chatMessages: React.FC = () => {
         (loading: boolean) => dispatch(setMessagesLoading(loading)),
         dispatch,
       );
+
       const typedResult = result as { regularMessages: any[] };
       if (typedResult.regularMessages.length > 0) {
+        console.log(typedResult.regularMessages);
         dispatch(
           updateMessageChats({
             chatId: chatId,
@@ -63,6 +66,8 @@ const chatMessages: React.FC = () => {
             unreadMessages: [],
           }),
         );
+      } else {
+        console.log('Fetched messages failed');
       }
     }
   };
@@ -144,21 +149,25 @@ const chatMessages: React.FC = () => {
 
   //receive message from socket.io
   useEffect(() => {
-    const handleMessageReceived = (messageReceived: any) => {
-      dispatch(
-        setNewMessage({
-          tempId: messageReceived._id,
-          message: messageReceived,
-        }),
-      );
+    const handleMessageReceived = (message: Message) => {
+      dispatch(setNewMessage({ tempId: message._id, message }));
     };
 
-    socketConnection && socket.on('received message', handleMessageReceived);
+    const handleMessageSent = (message: Message) => {
+      // optional — if you also emit "message sent" back to sender on server
+      dispatch(setNewMessage({ tempId: message._id, message }));
+    };
+
+    if (socketConnection) {
+      socket.on('received message', handleMessageReceived);
+      socket.on('message sent', handleMessageSent);
+    }
 
     return () => {
       socket.off('received message', handleMessageReceived);
+      socket.off('message sent', handleMessageSent);
     };
-  }, [socketConnection]);
+  }, [socketConnection, dispatch]);
 
   return (
     <div className="flex w-full h-full">
