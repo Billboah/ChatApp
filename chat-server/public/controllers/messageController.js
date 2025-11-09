@@ -9,84 +9,112 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getChatMessages = exports.sendMessage = void 0;
-const chatModel_1 = require("../models/chatModel");
+exports.getUnreadMessages = exports.getChatMessages = void 0;
 const messageModel_1 = require("../models/messageModel");
 const userModels_1 = require("../models/userModels");
-const sendMessage = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { content, chatId } = req.body;
-    if (!content || !chatId) {
-        console.log('Invalid data passed into request');
-        return res.sendStatus(400);
-    }
-    const newMessage = {
-        sender: req.user._id,
-        content: content,
-        chat: chatId,
-        delivered: true,
-    };
-    try {
-        const message = yield messageModel_1.Message.create(newMessage);
-        yield message.populate('sender', 'username pic email');
-        yield message.populate('chat');
-        yield userModels_1.User.populate(message.chat, {
-            path: 'users',
-            select: 'username pic email selectedChat unreadMessages',
-        });
-        yield chatModel_1.Chat.findByIdAndUpdate(chatId, {
-            latestMessage: message,
-        });
-        const chat = yield chatModel_1.Chat.findOne({ _id: chatId });
-        const usersInChat = chat.users;
-        yield userModels_1.User.updateMany({
-            _id: { $in: usersInChat },
-            selectedChat: { $ne: chatId },
-        }, {
-            $push: { 'unreadMessages': message },
-        }, {
-            new: true,
-        });
-        res.json(message);
-    }
-    catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
-    }
-});
-exports.sendMessage = sendMessage;
-const getChatMessages = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+//get all messages
+const getChatMessages = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const chatId = req.params.chatId;
-    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    const userId = req === null || req === void 0 ? void 0 : req.user._id;
+    const { lastMessageId } = req.query;
+    const limit = 20;
     if (!chatId) {
-        return;
+        throw new Error("Chat ID is required");
+    }
+    if (!userId) {
+        throw new Error("User does not exist");
     }
     try {
-        const messageIdsToRemove = yield messageModel_1.Message.find({ chat: chatId }).distinct('_id');
-        if (userId) {
-            const message = yield messageModel_1.Message.find({ chat: chatId })
-                .populate("sender", "username pic email")
-                .populate({
-                path: "chat",
-                populate: {
-                    path: "users",
-                    select: "username pic email selectedChat unreadMessages",
-                },
+        const user = yield userModels_1.User.findById(userId);
+        const unreadMessageIds = user.unreadMessages;
+        // Fetch unread messages first
+        const unreadMessages = yield messageModel_1.Message.find({
+            chat: chatId,
+            _id: { $in: unreadMessageIds },
+        })
+            .sort({ updatedAt: -1 })
+            .populate("sender", "username pic email")
+            .populate({
+            path: "chat",
+            populate: {
+                path: "users",
+                select: "username pic email selectedChat unreadMessages",
+            },
+        })
+            .exec();
+        let filter = {
+            chat: chatId,
+            _id: { $nin: unreadMessageIds }, // Exclude unread messages
+        };
+        // If lastMessageId is provided, filter for older messages
+        if (lastMessageId) {
+            filter["_id"] = { $lt: lastMessageId };
+        }
+        // Fetch regular messages with pagination
+        const regularMessages = yield messageModel_1.Message.find(filter)
+            .sort({ _id: -1 })
+            .limit(limit)
+            .populate("sender", "username pic email")
+            .populate({
+            path: "chat",
+            populate: {
+                path: "users",
+                select: "username pic email selectedChat unreadMessages",
+            },
+        })
+            .exec();
+        // Remove fetched unread messages from user's unreadMessages
+        const fetchedUnreadMessageIds = unreadMessages.map((msg) => msg._id.toString());
+        user.unreadMessages = unreadMessageIds.filter((id) => !fetchedUnreadMessageIds.includes(id.toString()));
+        yield user.save();
+        if (unreadMessages && unreadMessages.length > 0) {
+            res.json({
+                unreadMessages: [...unreadMessages].reverse(),
+                regularMessages: [...regularMessages].reverse(),
             });
-            yield userModels_1.User.findByIdAndUpdate(userId, {
-                $pull: {
-                    unreadMessages: {
-                        $in: messageIdsToRemove
-                    }
-                },
-            }, { new: true });
-            res.json(message);
         }
         else {
-            res.status(400).json({ error: 'User does not exist' });
+            res.json({
+                unreadMessages: [],
+                regularMessages: [...regularMessages].reverse(),
+            });
         }
     }
     catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
+        next(error);
     }
 });
 exports.getChatMessages = getChatMessages;
+//get unread message only
+const getUnreadMessages = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const chatId = req.params.chatId;
+    const userId = req === null || req === void 0 ? void 0 : req.user._id;
+    if (!chatId) {
+        throw new Error("Chat ID is required");
+    }
+    try {
+        const user = yield userModels_1.User.findById(userId);
+        const unreadMessageIds = user.unreadMessages;
+        const unreadMessages = yield messageModel_1.Message.find({
+            _id: { $in: unreadMessageIds },
+            chat: { $in: chatId },
+        })
+            .populate("sender", "username pic email")
+            .populate({
+            path: "chat",
+            populate: {
+                path: "users",
+                select: "username pic email selectedChat unreadMessages",
+            },
+        })
+            .exec();
+        const fetchedUnreadMessageIds = unreadMessages.map((msg) => msg._id.toString());
+        user.unreadMessages = unreadMessageIds.filter((id) => !fetchedUnreadMessageIds.includes(id.toString()));
+        yield user.save();
+        res.json(unreadMessages.reverse());
+    }
+    catch (error) {
+        next(error);
+    }
+});
+exports.getUnreadMessages = getUnreadMessages;

@@ -38,7 +38,7 @@ const AddParticipant = ({ setAddUser }: UserProps) => {
   //add users
   const handleAddUsers = () => {
     setAddLoading(true);
-    const config: AxiosRequestConfig<any> = {
+    const config: AxiosRequestConfig = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
       },

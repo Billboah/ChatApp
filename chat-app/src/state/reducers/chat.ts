@@ -11,7 +11,7 @@ interface ChatState {
     unreadMessages: Message[];
     _id: string;
     hasMoreMessages: boolean;
-    lastMessageId: any;
+    lastMessageId: string | null;
   }[];
   messagesLoading: boolean;
   messageError: { [key: string]: boolean };
@@ -24,10 +24,12 @@ interface ChatState {
     chatId: string | null;
   };
 }
+const storedChat =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('chats') : null;
+const storedUser =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('user') : null;
 
-const storedChat = localStorage.getItem('chats');
 let parsedChats = null;
-const storedUser = localStorage.getItem('user');
 let parsedUser = null;
 
 try {
@@ -38,7 +40,7 @@ try {
 }
 
 const initialState: ChatState = {
-  chats: parsedChats,
+  chats: parsedChats ?? [],
   selectedChat: null,
   newMessage: null,
   chatUser: parsedUser,
@@ -59,7 +61,7 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
-    setCurrentUser: (state, action) => {
+    setCurrentUser: (state, action: PayloadAction<User | null>) => {
       state.chatUser = action.payload;
     },
     setSocketConnected: (state, action: PayloadAction<boolean>) => {
@@ -68,10 +70,12 @@ const chatSlice = createSlice({
     setChats: (state, action: PayloadAction<Chat[]>) => {
       state.chats = action.payload;
 
-      if (action.payload) {
-        localStorage.setItem('chats', JSON.stringify(action.payload));
-      } else {
-        localStorage.removeItem('chats');
+      if (typeof localStorage !== 'undefined') {
+        if (action.payload) {
+          localStorage.setItem('chats', JSON.stringify(action.payload));
+        } else {
+          localStorage.removeItem('chats');
+        }
       }
     },
     updateChat: (state, action) => {
@@ -90,72 +94,162 @@ const chatSlice = createSlice({
       state,
       action: PayloadAction<{ tempId: string; message: Message }>,
     ) => {
-      const new_message = action.payload.message;
+      const { tempId, message } = action.payload;
 
-      state.newMessage = new_message;
-
-      const updatedChats = state.chats.slice();
-      const chat_message = state.messageChats.slice();
-
-      //search for the chat
-      const chatToMove = updatedChats.find(
-        (cht: Chat) => cht._id === new_message.chat._id,
-      );
-
-      //search for chat with the same tempId
-      const messageToInsert = chat_message.find(
-        (cht: any) => cht._id === new_message.chat._id,
-      );
-
-      if (chatToMove) {
-        chatToMove.latestMessage = new_message;
-
-        const indexOfChatToMove = updatedChats.indexOf(chatToMove);
-        if (indexOfChatToMove !== -1) {
-          updatedChats.splice(indexOfChatToMove, 1);
-          updatedChats.unshift(chatToMove);
-        }
+      if (!message || !message.chat) {
+        console.warn('Invalid message or missing chat in message payload');
+        return;
       }
+      // keep last received/created message for UI hooks
+      state.newMessage = message;
 
-      if (new_message.chat._id === state.selectedChat?._id) {
-        state.autoScroll = true;
-        if (messageToInsert) {
-          messageToInsert.regularMessages.push(
-            ...messageToInsert.unreadMessages,
-          );
-          messageToInsert.unreadMessages = [];
+      // Normalize chat id (message.chat can be an id string or populated object)
+      const incomingChatId =
+        typeof message.chat === 'string' ? message.chat : message.chat._id;
 
-          const existingMessage = messageToInsert.regularMessages.slice();
-          const messageIndex = existingMessage.findIndex(
-            (msg: Message) => msg._id === action.payload.tempId,
-          );
-
-          if (messageIndex !== -1) {
-            messageToInsert.regularMessages[messageIndex] = new_message;
-          } else {
-            messageToInsert.regularMessages.push(new_message);
+      // Update global chats list: set latestMessage and move chat to top
+      const chatIdx = state.chats.findIndex(
+        (c) => String(c._id) === String(incomingChatId),
+      );
+      if (chatIdx !== -1) {
+        state.chats[chatIdx].latestMessage = message;
+        const [chat] = state.chats.splice(chatIdx, 1);
+        // clear unread ids if this chat is currently selected
+        const selectedId = state.selectedChat?._id;
+        if (selectedId && String(selectedId) === String(incomingChatId)) {
+          chat.unreadMessages = [];
+        } else {
+          chat.unreadMessages = chat.unreadMessages || [];
+          // store ids as strings and avoid duplicates
+          const msgIdStr = String(message._id);
+          if (!chat.unreadMessages.map(String).includes(msgIdStr)) {
+            chat.unreadMessages.push(message._id);
           }
         }
+        state.chats.unshift(chat);
       } else {
-        if (!chatToMove?.unreadMessages.includes(new_message._id)) {
-          chatToMove?.unreadMessages.push(new_message._id);
+        // If chat isn't in list yet, add it with latestMessage
+        const chatToInsert =
+          typeof message.chat === 'string'
+            ? ({ _id: message.chat, latestMessage: message } as unknown as Chat)
+            : ({ ...message.chat, latestMessage: message } as Chat);
+        state.chats.unshift(chatToInsert);
+      }
+
+      // Find the message chat for this chat
+      const msgChatIndex = state.messageChats.findIndex(
+        (mc) => String(mc._id) === String(incomingChatId),
+      );
+
+      // If message chat doesn't exist, do NOT create a new one
+      if (msgChatIndex === -1) {
+        // Do nothing, skip processing for non-existing messageChat
+        return;
+      }
+
+      // Get the message chat (either existing or newly created)
+      const msgChat = state.messageChats.find(
+        (mc) => String(mc._id) === String(incomingChatId),
+      )!;
+
+      // Check if message chat exists and if the chat is not selected
+      if (
+        msgChatIndex !== -1 &&
+        (!state.selectedChat?._id ||
+          String(state.selectedChat._id) !== String(incomingChatId))
+      ) {
+        // Add to unread messages if not duplicate
+        if (
+          !msgChat.unreadMessages.find(
+            (m) => String(m._id) === String(message._id),
+          )
+        ) {
+          msgChat.unreadMessages.push(message);
+          // Sort unread messages by updatedAt in ascending order
+          msgChat.unreadMessages.sort(
+            (a, b) =>
+              new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+          );
+        }
+        return;
+      }
+
+      if (
+        state.selectedChat?._id &&
+        String(state.selectedChat._id) === String(incomingChatId)
+      ) {
+        state.autoScroll = true;
+
+        // Combine regular and unread messages
+        const allMessages = [
+          ...msgChat.regularMessages,
+          ...msgChat.unreadMessages,
+        ];
+
+        // Check if message exists (by _id or tempId)
+        const existingMsgIndex = allMessages.findIndex(
+          (m) => m._id === message._id || m._id === tempId,
+        );
+
+        if (existingMsgIndex !== -1) {
+          // Replace existing message
+          msgChat.regularMessages = allMessages
+            .map((m) =>
+              m._id === message._id || m._id === tempId ? message : m,
+            )
+            // Sort messages by updatedAt in ascending order (oldest first)
+            .sort(
+              (a, b) =>
+                new Date(a.updatedAt).getTime() -
+                new Date(b.updatedAt).getTime(),
+            );
+        } else {
+          // Add new message and sort
+          const updatedMessages = [...msgChat.regularMessages, message];
+          msgChat.regularMessages = updatedMessages.sort(
+            (a, b) =>
+              new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+          );
+        }
+
+        // Clear unread messages when chat is selected
+        msgChat.unreadMessages = [];
+      } else {
+        // Not viewing this chat: add to unreadMessages if not duplicate
+        if (
+          !msgChat.unreadMessages.find(
+            (m) => String(m._id) === String(message._id),
+          )
+        ) {
+          msgChat.unreadMessages.push(message);
+          // Sort unread messages by updatedAt
+          msgChat.unreadMessages.sort(
+            (a, b) =>
+              new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+          );
         }
       }
-      //update message
-      state.messageChats = chat_message;
-      state.chats = updatedChats;
+
+      msgChat.lastMessageId = message._id;
     },
     unsetUnreadMessages: (state, action: PayloadAction<string>) => {
       const chat_message = state.messageChats.slice();
 
       //search for chat with the same tempId
       const messageToInsert = chat_message.find(
-        (cht: any) => cht._id === action.payload,
+        (cht) => cht._id === action.payload,
       );
 
-      //update message
+      //update message and sort by updatedAt
       if (messageToInsert) {
-        messageToInsert.regularMessages.push(...messageToInsert.unreadMessages);
+        const allMessages = [
+          ...messageToInsert.regularMessages,
+          ...messageToInsert.unreadMessages,
+        ];
+        messageToInsert.regularMessages = allMessages.sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
         messageToInsert.unreadMessages = [];
       }
       state.messageChats = chat_message;
@@ -184,7 +278,7 @@ const chatSlice = createSlice({
       const chat_message = state.messageChats.slice();
 
       const messageToInsert = chat_message.find(
-        (cht: any) => cht._id === action.payload.chatId,
+        (cht) => cht._id === action.payload.chatId,
       );
       if (messageToInsert) {
         messageToInsert.hasMoreMessages = action.payload.hasMore;
@@ -196,40 +290,70 @@ const chatSlice = createSlice({
         chatId: string;
         regularMessages: Message[];
         unreadMessages: Message[];
+        hasMore?: boolean;
       } | null>,
     ) => {
-      if (!action.payload) {
-        return;
-      }
+      if (!action.payload) return;
       const user = state.chatUser;
 
-      const { regularMessages, unreadMessages, chatId } = action.payload;
+      const {
+        regularMessages = [],
+        unreadMessages = [],
+        chatId,
+        hasMore,
+      } = action.payload;
 
       const lastMessageId =
         regularMessages.length > 0
           ? regularMessages[0]._id
-          : state.messageChats.find((cht: any) => cht._id === chatId)
-              ?.lastMessageId;
+          : state.messageChats.find((cht) => cht._id === chatId)
+              ?.lastMessageId || null;
+
+      const PAGE_SIZE = 20; // must match server limit
 
       if (chatId && user) {
         const existingChat = state.messageChats.find(
-          (cht: any) => cht._id === chatId,
+          (cht) => cht._id === chatId,
         );
 
         if (existingChat) {
+          // dedupe incoming messages against existing regular messages
+          const existingIds = new Set(
+            existingChat.regularMessages.map((m) => m._id),
+          );
+          const incoming = regularMessages.filter(
+            (m) => !existingIds.has(m._id),
+          );
           existingChat.regularMessages = [
-            ...regularMessages,
+            ...incoming,
             ...existingChat.regularMessages,
           ];
-          existingChat.unreadMessages.push(...unreadMessages);
+
+          // dedupe unread messages
+          const unreadExistingIds = new Set(
+            existingChat.unreadMessages.map((m) => m._id),
+          );
+          const incomingUnread = unreadMessages.filter(
+            (m) => !unreadExistingIds.has(m._id),
+          );
+          existingChat.unreadMessages.push(...incomingUnread);
+
           existingChat.lastMessageId = lastMessageId;
+          // prefer explicit server hasMore, fallback to page-size heuristic
+          existingChat.hasMoreMessages =
+            typeof hasMore === 'boolean'
+              ? hasMore
+              : regularMessages.length >= PAGE_SIZE;
         } else {
           state.messageChats.push({
             _id: chatId,
             regularMessages: regularMessages,
             unreadMessages: unreadMessages,
             lastMessageId: lastMessageId,
-            hasMoreMessages: true,
+            hasMoreMessages:
+              typeof hasMore === 'boolean'
+                ? hasMore
+                : regularMessages.length >= PAGE_SIZE,
           });
           state.autoScroll = true;
         }
@@ -253,7 +377,9 @@ const chatSlice = createSlice({
     signOut: (state) => {
       state.messageChats = [];
       state.chats = [];
-      localStorage.removeItem('chats');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('chats');
+      }
     },
   },
 });

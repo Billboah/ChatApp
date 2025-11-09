@@ -1,5 +1,3 @@
-// COMPONENT: ChatInfo.tsx
-
 import React, { useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';

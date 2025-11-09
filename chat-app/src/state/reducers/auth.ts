@@ -6,7 +6,9 @@ interface AuthState {
   user: User | null;
 }
 
-const storedUser = localStorage.getItem('user');
+const storedUser =
+  typeof localStorage !== 'undefined' ? localStorage.getItem('user') : null;
+
 let parsedUser = null;
 
 try {
@@ -26,15 +28,19 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User | null>) => {
       state.user = action.payload;
 
-      if (action.payload) {
-        localStorage.setItem('user', JSON.stringify(action.payload));
-      } else {
-        localStorage.removeItem('user');
+      if (typeof localStorage !== 'undefined') {
+        if (action.payload) {
+          localStorage.setItem('user', JSON.stringify(action.payload));
+        } else {
+          localStorage.removeItem('user');
+        }
       }
     },
     logoutUser: (state) => {
       state.user = null;
-      localStorage.removeItem('user');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('user');
+      }
     },
   },
 });

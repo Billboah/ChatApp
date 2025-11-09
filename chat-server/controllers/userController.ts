@@ -89,13 +89,17 @@ export const signInController = async (
   }
 };
 
-//
+// search users
 export const searchUsersController = async (
   req: CustomRequest,
   res: Response,
   next: NextFunction
 ) => {
   const keyword = req.query.search;
+
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
 
   try {
     const users = await User.find(
@@ -123,6 +127,11 @@ export const changeUserName = async (
 ) => {
   try {
     const username: string = req.body.username;
+
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const userId = req.user._id;
     const updatedUser = await User.findByIdAndUpdate(
       userId,
@@ -162,6 +171,11 @@ export const changePicController = async (
 ) => {
   try {
     const pic: string = req.body.pic;
+
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const userId = req.user._id;
     const updatedUser = await User.findByIdAndUpdate(
       userId,

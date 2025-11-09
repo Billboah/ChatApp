@@ -10,13 +10,8 @@ import SendIcon from '@mui/icons-material/Send';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../state/reducers';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  setMessageError,
-  setNewMessage,
-  setTypingStatus,
-} from '../../state/reducers/chat';
-import { apiPost } from '../../utils/api';
-import { Message, User } from '../../types';
+import { setNewMessage, setTypingStatus } from '../../state/reducers/chat';
+import { Message } from '../../types';
 import socket from '../../socket/socket';
 
 const Input: React.FC = () => {
@@ -30,7 +25,7 @@ const Input: React.FC = () => {
     return uuidv4();
   }
 
-  // Send message via socket
+  // ==== Send message via socket ======
   const sendMessage = async (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !user || !selectedChat) return;
@@ -53,21 +48,15 @@ const Input: React.FC = () => {
     dispatch(setNewMessage({ tempId, message: inputMessage }));
 
     // Send message via socket (auth token already attached to connection)
-    socket.emit(
-      'send message',
-      {
-        chatId: selectedChat._id,
-        content: inputMessage.content,
-        senderId: user._id,
-      },
-      (response: { success: boolean; message?: Message }) => {
-        if (response?.success && response.message) {
-          dispatch(setNewMessage({ tempId, message: response.message }));
-        } else {
-          dispatch(setMessageError({ id: tempId, hasError: true }));
-        }
-      },
-    );
+    // Emit the message
+    socket.emit('send message', {
+      chatId: selectedChat._id,
+      content: inputMessage.content,
+      senderId: user._id,
+      tempId,
+    });
+
+    // socket listeners are registered globally in a useEffect (not per-send)
 
     setInput('');
     const textarea = document.getElementById(
@@ -76,17 +65,17 @@ const Input: React.FC = () => {
     if (textarea) adjustTextareaHeight(textarea);
   };
 
-  // Typing events
+  // ==== Typing events ======
+
   const emitTyping = () => {
-    if (selectedChat && user) socket.emit('typing', user, selectedChat._id);
+    if (selectedChat && user) socket.emit('typing', selectedChat._id);
   };
 
   const emitStopTyping = () => {
-    if (selectedChat && user)
-      socket.emit('stop typing', user._id, selectedChat._id);
+    if (selectedChat && user) socket.emit('stop typing', selectedChat._id);
   };
 
-  // Handle input
+  // ===== Handle input
   const handleInput = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
     adjustTextareaHeight(e.target);
@@ -105,7 +94,7 @@ const Input: React.FC = () => {
 
   const handleBlur = () => emitStopTyping();
 
-  // Auto-resize
+  // ====== Auto-resize ======
   const adjustTextareaHeight = (textarea: HTMLTextAreaElement) => {
     textarea.style.minHeight = '30px';
     textarea.style.height = '30px';
@@ -117,21 +106,20 @@ const Input: React.FC = () => {
   useEffect(() => {
     const handleTyping = ({
       chatId,
-      sender,
+      userId,
     }: {
       chatId: string;
-      sender: User | null;
+      userId: string;
     }) => {
-      dispatch(setTypingStatus({ isTyping: true, user: sender, chatId }));
+      // Find user in chat participants and set as typing
+      if (selectedChat?.users) {
+        const typingUser =
+          selectedChat.users.find((u) => u._id === userId) || null;
+        dispatch(setTypingStatus({ isTyping: true, user: typingUser, chatId }));
+      }
     };
 
-    const handleStopTyping = ({
-      chatId,
-      senderId,
-    }: {
-      chatId: string;
-      senderId: string;
-    }) => {
+    const handleStopTyping = () => {
       dispatch(setTypingStatus({ isTyping: false, user: null, chatId: null }));
     };
 
@@ -141,6 +129,51 @@ const Input: React.FC = () => {
     return () => {
       socket.off('typing', handleTyping);
       socket.off('stop typing', handleStopTyping);
+    };
+  }, [dispatch, selectedChat]);
+
+  // Global socket listeners: handle confirmations and incoming messages
+  useEffect(() => {
+    const handleMessageSent = (payload: any) => {
+      // payload may be { tempId, message } or the message object itself
+      const message: Message = payload?.message ?? payload;
+      const tempId: string = payload?.tempId ?? message?._id;
+      if (!message) return;
+      dispatch(setNewMessage({ tempId: tempId || message._id, message }));
+    };
+
+    const handleReceivedMessage = (payload: any) => {
+      // Server may emit either:
+      // - a full message object
+      // - { ...messageFields, tempId }
+      // - { tempId, message }
+      const message: Message = payload?.message ?? payload;
+      const tempId: string = payload?.tempId ?? message?._id;
+
+      if (!message) {
+        console.warn(
+          'Received malformed payload for received message:',
+          payload,
+        );
+        return;
+      }
+
+      dispatch(setNewMessage({ tempId: tempId || message._id, message }));
+      console.log('received message', message, 'tempId', tempId);
+    };
+
+    const handleSocketError = (msg: string) => {
+      console.error('Socket error:', msg);
+    };
+
+    socket.on('message sent', handleMessageSent);
+    socket.on('received message', handleReceivedMessage);
+    socket.on('error', handleSocketError);
+
+    return () => {
+      socket.off('message sent', handleMessageSent);
+      socket.off('received message', handleReceivedMessage);
+      socket.off('error', handleSocketError);
     };
   }, [dispatch]);
 

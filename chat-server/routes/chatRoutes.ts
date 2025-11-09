@@ -4,19 +4,13 @@ import {
   addMemberController,
   changeGroupIconController,
   changeGroupNameController,
-  createChatController,
-  createGroupChatController,
   getAllChatController,
   removeMemberController,
 } from "../controllers/chatController";
 
 const router: Router = Router();
 
-router.post("/", authenticate, createChatController);
-
 router.get("/", authenticate, getAllChatController);
-
-router.post("/group", authenticate, createGroupChatController);
 
 router.put("/rename", authenticate, changeGroupNameController);
 

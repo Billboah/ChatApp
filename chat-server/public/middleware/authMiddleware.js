@@ -17,23 +17,24 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const userModels_1 = require("../models/userModels");
 const authenticate = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     let token;
-    if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+    if (req.headers.authorization &&
+        req.headers.authorization.startsWith("Bearer")) {
         try {
             token = req.headers.authorization.split(" ")[1];
             const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
             const user = yield userModels_1.User.findById(decoded.id).select("-password");
             if (!user) {
-                res.status(404).json({ error: 'User not found.' });
+                res.status(404).json({ error: "User not found." });
             }
             req.user = user;
             next();
         }
         catch (error) {
-            res.status(401).json({ error: 'Invalid token.' });
+            res.status(401).json({ error: "Invalid token." });
         }
     }
     if (!token) {
-        res.status(401).json({ error: 'Authorization token not found.' });
+        res.status(401).json({ error: "Authorization token not found." });
     }
 });
 exports.authenticate = authenticate;

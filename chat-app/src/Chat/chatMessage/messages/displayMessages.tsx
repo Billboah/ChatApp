@@ -16,14 +16,14 @@ const DisplayMessages: React.FC<Props> = ({ groupedMessages }) => {
   const { messageError } = useSelector((state: RootState) => state.chat);
 
   //time format
-  const timeFormat = (message: any) => {
+  const timeFormat = (message: Message) => {
     const mongoDBUpdatedAt = message?.updatedAt;
     const updatedAtDate = new Date(mongoDBUpdatedAt);
     return format(updatedAtDate, 'HH:mm');
   };
 
   //format date
-  const formattedDate = (date: any) => {
+  const formattedDate = (date: string | number | Date) => {
     const today = new Date();
     const messageDate = new Date(date);
 
@@ -52,7 +52,7 @@ const DisplayMessages: React.FC<Props> = ({ groupedMessages }) => {
           {Object.keys(groupedMessages[date]).map((sender) => (
             <div key={sender}>
               {groupedMessages[date][sender].map(
-                (message: any, index: any, messagesArray: any) => (
+                (message: Message, index: number, messagesArray: Message[]) => (
                   <div
                     key={message._id}
                     className="w-full  flex justify-end items-center py-[5px] px-5"

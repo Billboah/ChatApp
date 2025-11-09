@@ -10,7 +10,12 @@ export const getChatMessages = async (
   next: NextFunction
 ) => {
   const chatId = req.params.chatId;
-  const userId = req?.user._id;
+
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const userId = req.user._id;
   const { lastMessageId } = req.query;
   const limit = 20;
   if (!chatId) {
@@ -52,10 +57,10 @@ export const getChatMessages = async (
       filter["_id"] = { $lt: lastMessageId };
     }
 
-    // Fetch regular messages with pagination
-    const regularMessages = await Message.find(filter)
+    // Fetch regular messages with pagination. Fetch one extra to detect if there are more.
+    const regularMessagesRaw = await Message.find(filter)
       .sort({ _id: -1 })
-      .limit(limit)
+      .limit(limit + 1)
       .populate("sender", "username pic email")
       .populate({
         path: "chat",
@@ -65,27 +70,44 @@ export const getChatMessages = async (
         },
       })
       .exec();
+
+    // Determine if there are more messages beyond this page
+    const hasMore = regularMessagesRaw.length > limit;
+
+    // Trim to the requested page size
+    const regularMessages = hasMore
+      ? regularMessagesRaw.slice(0, limit)
+      : regularMessagesRaw;
     // Remove fetched unread messages from user's unreadMessages
     const fetchedUnreadMessageIds = unreadMessages.map((msg) =>
       msg._id.toString()
     );
 
     user.unreadMessages = unreadMessageIds.filter(
-      (id) => !fetchedUnreadMessageIds.includes(id.toString())
+      (id: string) => !fetchedUnreadMessageIds.includes(id.toString())
     );
     await user.save();
 
-    if (unreadMessages && unreadMessages.length > 0) {
-      res.json({
-        unreadMessages: [...unreadMessages].reverse(),
-        regularMessages: [...regularMessages].reverse(),
+    // Ensure uniqueness just in case (dedupe by _id)
+    const dedupe = (arr: any[]) => {
+      const seen = new Set();
+      return arr.filter((m) => {
+        const id = m._id?.toString();
+        if (!id) return false;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
       });
-    } else {
-      res.json({
-        unreadMessages: [],
-        regularMessages: [...regularMessages].reverse(),
-      });
-    }
+    };
+
+    const unreadOut = dedupe(unreadMessages).reverse();
+    const regularOut = dedupe(regularMessages).reverse();
+
+    res.json({
+      unreadMessages: unreadOut,
+      regularMessages: regularOut,
+      hasMore,
+    });
   } catch (error) {
     next(error);
   }
@@ -98,7 +120,12 @@ export const getUnreadMessages = async (
   next: NextFunction
 ) => {
   const chatId = req.params.chatId;
-  const userId = req?.user._id;
+
+  if (!req.user) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const userId = req.user._id;
 
   if (!chatId) {
     throw new Error("Chat ID is required");
@@ -128,7 +155,7 @@ export const getUnreadMessages = async (
     );
 
     user.unreadMessages = unreadMessageIds.filter(
-      (id) => !fetchedUnreadMessageIds.includes(id.toString())
+      (id: string) => !fetchedUnreadMessageIds.includes(id.toString())
     );
     await user.save();
 

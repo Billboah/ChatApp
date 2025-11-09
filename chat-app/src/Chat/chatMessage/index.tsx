@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { FaAngleDown } from 'react-icons/fa';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   setMessagesLoading,
   updateMessageChats,
   setNewMessage,
+  setHasMore,
 } from '../../state/reducers/chat';
 import ChatInfo from './chatInfo';
 import Messages from './messages';
@@ -29,20 +30,20 @@ const chatMessages: React.FC = () => {
   const previousScrollHeightRef = useRef<number>(0);
   const [scrollButton, setScrollButton] = useState(false);
   const hasMoreMessages = messageChats.find(
-    (chat: any) => chat._id === selectedChat?._id,
+    (chat) => chat._id === selectedChat?._id,
   )?.hasMoreMessages;
 
   const messageChat = messageChats.find(
-    (chat: any) => chat._id === selectedChat?._id,
+    (chat) => chat._id === selectedChat?._id,
   );
 
   // Fetch messages api
-  const fetchMessages = async (lastId: string) => {
+  const fetchMessages = async (lastId: string | null) => {
     const chatId = selectedChat?._id;
 
     dispatch(setMessagesLoading(true));
     const config = {
-      params: { lastMessageId: lastId },
+      params: lastId ? { lastMessageId: lastId } : undefined,
       headers: {
         Authorization: `Bearer ${user?.token}`,
       },
@@ -56,16 +57,29 @@ const chatMessages: React.FC = () => {
         dispatch,
       );
 
-      const typedResult = result as { regularMessages: any[] };
-      if (typedResult.regularMessages.length > 0) {
-        console.log(typedResult.regularMessages);
+      const typedResult = result as {
+        regularMessages: Message[];
+        unreadMessages?: Message[];
+        hasMore?: boolean;
+      } | null;
+      if (typedResult) {
         dispatch(
           updateMessageChats({
             chatId: chatId,
             regularMessages: typedResult.regularMessages,
-            unreadMessages: [],
+            unreadMessages: typedResult.unreadMessages || [],
+            hasMore:
+              typeof typedResult.hasMore === 'boolean'
+                ? typedResult.hasMore
+                : undefined,
           }),
         );
+        // If server provided hasMore, use it; otherwise fallback to length heuristic
+        const serverHasMore =
+          typeof typedResult.hasMore === 'boolean'
+            ? typedResult.hasMore
+            : (typedResult.regularMessages?.length ?? 0) >= 20;
+        dispatch(setHasMore({ hasMore: serverHasMore, chatId }));
       } else {
         console.log('Fetched messages failed');
       }
@@ -122,7 +136,7 @@ const chatMessages: React.FC = () => {
         previousScrollHeightRef.current =
           scrollContainerRef.current.scrollHeight;
         if (hasMoreMessages) {
-          fetchMessages(messageChat?.lastMessageId);
+          fetchMessages(messageChat?.lastMessageId ?? null);
         }
       }
     };
@@ -149,13 +163,36 @@ const chatMessages: React.FC = () => {
 
   //receive message from socket.io
   useEffect(() => {
-    const handleMessageReceived = (message: Message) => {
-      dispatch(setNewMessage({ tempId: message._id, message }));
+    const normalizePayload = (
+      payload: any,
+    ): { tempId: string; message: Message } | null => {
+      if (!payload) return null;
+      const message: Message = payload?.message ?? payload;
+      const tempId: string = payload?.tempId ?? message?._id;
+      if (!message) return null;
+      return { tempId: tempId || message._id, message };
     };
 
-    const handleMessageSent = (message: Message) => {
-      // optional — if you also emit "message sent" back to sender on server
-      dispatch(setNewMessage({ tempId: message._id, message }));
+    const handleMessageReceived = (payload: any) => {
+      const normalized = normalizePayload(payload);
+      if (!normalized) return;
+      dispatch(
+        setNewMessage({
+          tempId: normalized.tempId,
+          message: normalized.message,
+        }),
+      );
+    };
+
+    const handleMessageSent = (payload: any) => {
+      const normalized = normalizePayload(payload);
+      if (!normalized) return;
+      dispatch(
+        setNewMessage({
+          tempId: normalized.tempId,
+          message: normalized.message,
+        }),
+      );
     };
 
     if (socketConnection) {

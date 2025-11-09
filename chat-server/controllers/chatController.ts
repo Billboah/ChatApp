@@ -2,79 +2,7 @@ import { Response, NextFunction } from "express";
 import { Chat, IChat } from "../models/chatModel";
 import { User } from "../models/userModels";
 import { CustomRequest, user } from "../config/express";
-
-//create individual chat
-export const createChatController = async (
-  req: CustomRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const { userId }: { userId: string } = req.body;
-
-    if (!userId) {
-      throw new Error("Select a user to start a new chat chat");
-    }
-
-    const currentUser: user = req.user;
-    const targetUser: user | null = await User.findById(userId);
-
-    if (!targetUser) {
-      throw new Error("Target user not found");
-    }
-
-    const isChat: IChat[] = await Chat.find({
-      isGroupChat: false,
-      users: { $all: [currentUser._id, targetUser._id] },
-    });
-
-    //if chat is available
-    if (isChat.length > 0) {
-      return res.send({
-        chat: isChat[0],
-        currentUser: {
-          username: currentUser.username,
-          pic: currentUser.pic,
-          email: currentUser.email,
-        },
-        targetUser: {
-          username: targetUser.username,
-          pic: targetUser.pic,
-          email: targetUser.email,
-        },
-      });
-    } else {
-      //if chat is not available, create a new one
-      const chatData = {
-        chatName: "sender",
-        isGroupChat: false,
-        users: [currentUser._id, targetUser._id],
-      };
-
-      const createdChat = await Chat.create(chatData);
-
-      const fullChat = await Chat.findOne({ _id: createdChat._id })
-        .populate("users", "username pic email")
-        .populate({
-          path: "latestMessage",
-          populate: {
-            path: "sender",
-            select: "username email",
-          },
-        });
-
-      if (fullChat) {
-        return res
-          .status(200)
-          .send({ ...fullChat.toObject(), unreadMessages: [] });
-      } else {
-        throw new Error("Failed to create and fetch the chat");
-      }
-    }
-  } catch (error) {
-    next(error);
-  }
-};
+import { IMessage } from "../models/messageModel";
 
 //get all chat
 export const getAllChatController = async (
@@ -83,14 +11,19 @@ export const getAllChatController = async (
   next: NextFunction
 ) => {
   try {
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
     const results = await Chat.find({ users: req.user._id })
       .populate("users", "username pic email")
       .populate("groupAdmin", "username pic email")
       .populate({
         path: "latestMessage",
+        select: "chat content delivered sender",
         populate: {
           path: "sender",
-          select: "username email",
+          select: "username pic email",
         },
       })
       .sort({ updatedAt: -1 });
@@ -102,7 +35,8 @@ export const getAllChatController = async (
     const populatedChat = results.map((chat) => {
       // Find unread messages for this chat
       const chat_unread_messages = unread_messages.unreadMessages.filter(
-        (message) => message.chat._id.toString() === chat._id.toString()
+        (message: IMessage) =>
+          message.chat._id.toString() === chat._id.toString()
       );
 
       // Add unread messages to the chat
@@ -113,58 +47,6 @@ export const getAllChatController = async (
     });
 
     res.status(200).json(populatedChat);
-  } catch (error) {
-    next(error);
-  }
-};
-
-//create a group chat
-export const createGroupChatController = async (
-  req: CustomRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    if (!req.body.users || !req.body.name) {
-      res.status(400);
-      throw new Error("Please fill all necessary fields");
-    }
-
-    const users: user[] = JSON.parse(req.body.users);
-
-    if (users.length < 2) {
-      res.status(400);
-      throw new Error("More than 2 users are required to form a group chat");
-    }
-
-    users.push(req.user);
-
-    const groupChat = await Chat.create({
-      chatName: req.body.name,
-      pic: req.body.pic,
-      users: users,
-      groupAdmin: req.user._id,
-      isGroupChat: true,
-    });
-
-    const fullGroupChat = await Chat.findOne({ _id: groupChat._id })
-      .populate("users", "username pic email")
-      .populate("groupAdmin", "username pic email")
-      .populate({
-        path: "latestMessage",
-        populate: {
-          path: "sender",
-          select: "username email",
-        },
-      });
-
-    if (fullGroupChat) {
-      return res
-        .status(200)
-        .send({ ...fullGroupChat.toObject(), unreadMessages: [] });
-    } else {
-      throw new Error("Failed to create and fetch the the group chat");
-    }
   } catch (error) {
     next(error);
   }
@@ -240,6 +122,9 @@ export const removeMemberController = async (
 ) => {
   try {
     const { chatId, userId }: { chatId: string; userId: string } = req.body;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const chat: any = await Chat.findOne({ _id: chatId });
 
@@ -277,6 +162,9 @@ export const addMemberController = async (
   try {
     const users: user[] = JSON.parse(req.body.userIds);
     const chatId: string = req.body.chatId;
+    if (!req.user) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const chat: any = await Chat.findOne({ _id: chatId });
 

@@ -1,24 +1,15 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "esModuleInterop": true,
     "target": "es6",
+    "module": "commonjs",
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "noImplicitAny": true,
     "outDir": "dist",
-    "baseUrl": ".",
-    "paths": {
-      "*": [
-        "node_modules/*",
-        "api/types/*"
-      ]
-    }
+    "types": ["node", "bcryptjs"],
+    "baseUrl": "."
   },
-  "include": [
-    "/**/*.ts",
-    "server.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "**/*.spec.ts"
-  ]
+  "include": ["**/*.ts", "server.ts"],
+  "exclude": ["node_modules", "**/*.spec.ts"]
 }

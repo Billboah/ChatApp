@@ -21,6 +21,13 @@ import ChatList from './chatList';
 import { Chat, User } from '../../types';
 import { SkeletonLoading } from '../../config/ChatLoading';
 
+// Inform TypeScript that a global `window.socket` may exist.
+declare global {
+  interface Window {
+    socket?: any;
+  }
+}
+
 export default function chatSidebar() {
   const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
@@ -32,15 +39,17 @@ export default function chatSidebar() {
   const [search, setSearch] = useState('');
   const [chatsLoading, setChatsLoading] = useState(false);
 
-  //display chats
+  // Initialize socket listeners and fetch chats
   useEffect(() => {
     setChatsLoading(true);
-    const config: AxiosRequestConfig<any> = {
+    const socket = window.socket;
+    const config: AxiosRequestConfig = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
       },
     };
 
+    // Initial chat fetch
     axios
       .get(`${BACKEND_API}/api/chat`, config)
       .then((response) => {
@@ -59,68 +68,99 @@ export default function chatSidebar() {
           dispatch(setError('An error occurred, please try again.'));
         }
       });
+
+    // Listen for new chats
+    if (socket) {
+      const handleNewChat = (chat: Chat) => {
+        dispatch(updateChat(chat));
+      };
+
+      socket.on('new chat', handleNewChat);
+
+      // Cleanup
+      return () => {
+        socket.off('new chat', handleNewChat);
+      };
+    }
   }, []);
 
-  //select chat
+  //select or create individual chat
   const accessChat = (userInfo: User) => {
     const userId = userInfo._id;
-    setSelectLoading((prevSelectLoading: any) => ({
+    setSelectLoading((prevSelectLoading) => ({
       ...prevSelectLoading,
       [userId]: true,
     }));
-    const config: AxiosRequestConfig<any> = {
-      headers: {
-        Authorization: `Bearer ${user?.token}`,
-      },
+
+    // Get socket instance
+    const socket = window.socket;
+
+    if (!socket) {
+      dispatch(setError('Socket connection not available'));
+      setSelectLoading((prevSelectLoading) => ({
+        ...prevSelectLoading,
+        [userId]: false,
+      }));
+      return;
+    }
+
+    // Request chat access through socket
+    socket.emit('access chat', userId);
+
+    // Handle chat access response
+    const handleChatAccess = (chat: Chat) => {
+      dispatch(setSelectedChat(chat));
+      dispatch(updateChat(chat));
+      dispatch(setSmallScreen(false));
+      setSelectLoading((prevSelectLoading) => ({
+        ...prevSelectLoading,
+        [userId]: false,
+      }));
+      setSearch('');
+      // Remove these event listeners after handling
+      socket.off('chat accessed', handleChatAccess);
+      socket.off('error', handleError);
     };
 
-    axios
-      .post(`${BACKEND_API}/api/chat`, { userId }, config)
-      .then((response) => {
-        dispatch(setSelectedChat(response.data));
-        dispatch(updateChat(response.data));
-        dispatch(setSmallScreen(false));
-        setSelectLoading((prevSelectLoading: any) => ({
-          ...prevSelectLoading,
-          [userId]: false,
-        }));
-        setSearch('');
-      })
-      .catch((error) => {
-        setSelectLoading((prevSelectLoading: any) => ({
-          ...prevSelectLoading,
-          [userId]: false,
-        }));
-        if (error.response) {
-          dispatch(setError(error.response.data.message));
-        } else if (error.request) {
-          console.error('No response received:', error.request);
-          dispatch(setError('Network error, please try again later.'));
-        } else {
-          console.error('Error:', error.message);
-          dispatch(setError('An error occurred, please try again.'));
-        }
-      });
+    // Handle any errors
+    const handleError = (error: string) => {
+      dispatch(setError(error));
+      setSelectLoading((prevSelectLoading) => ({
+        ...prevSelectLoading,
+        [userId]: false,
+      }));
+      // Remove these event listeners after handling
+      socket.off('chat accessed', handleChatAccess);
+      socket.off('error', handleError);
+    };
+
+    // Set up event listeners
+    socket.on('chat accessed', handleChatAccess);
+    socket.on('error', handleError);
   };
 
   // search chat
-  const filteredChats = chats?.filter(
-    (item: { chatName: string; users: any[]; isGroupChat: boolean }) => {
-      const searchLowerCase = search.trim().toLowerCase();
+  const filteredChats = chats?.filter((cht: Chat) => {
+    const searchLowerCase = search.trim().toLowerCase();
 
-      if (item.isGroupChat === true) {
-        return item.chatName.toLowerCase().includes(searchLowerCase);
-      } else {
-        return (
-          item?.users[0]._id === user?._id
-            ? item.users[1].username
-            : item.users[0].username
-        )
-          .toLowerCase()
-          .includes(searchLowerCase);
-      }
-    },
-  );
+    if (!user) return false;
+
+    if (cht.isGroupChat === true) {
+      return cht.chatName.toLowerCase().includes(searchLowerCase);
+    } else {
+      // One-on-one chat
+      const users = Array.isArray(cht.users) ? cht.users : [];
+
+      // Find the other user in the one-on-one chat
+      const otherUser =
+        users.find((u) => u._id !== user._id) ?? users[0] ?? null;
+      const otherUsername = otherUser
+        ? otherUser.username || otherUser.name || 'Unknown'
+        : 'Unknown';
+
+      return otherUsername.toLowerCase().includes(searchLowerCase);
+    }
+  });
 
   return (
     <div className="bg-gray-300 h-full w-full relative border border-r-gray-400 border-1">

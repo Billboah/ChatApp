@@ -16,12 +16,23 @@ const Header = () => {
   const reorderedParticipants =
     selectedChat && user
       ? [
+          // current user first
           ...selectedChat.users.filter((p) => p._id === user._id),
+
+          // group admin next (only if it's a group chat)
+          ...(selectedChat.isGroupChat
+            ? selectedChat.users.filter(
+                (p) =>
+                  p._id === selectedChat.groupAdmin?._id && p._id !== user._id,
+              )
+            : []),
+
+          // then everyone else
           ...selectedChat.users.filter(
-            (p) => p._id === selectedChat.groupAdmin._id && p._id !== user._id,
-          ),
-          ...selectedChat.users.filter(
-            (p) => p._id !== user._id && p._id !== selectedChat.groupAdmin._id,
+            (p) =>
+              p._id !== user._id &&
+              (!selectedChat.isGroupChat ||
+                p._id !== selectedChat.groupAdmin?._id),
           ),
         ]
       : [];

@@ -18,7 +18,7 @@ interface AuthPayload {
 }
 
 // Store active user connections
-const users = new Map<string, string>(); // userId -> socketId
+const connectedUsers = new Map<string, string>(); // userId -> socketId
 
 // Rate limiting for messages (userId -> timestamp)
 const messageTimestamps = new Map<string, number>();
@@ -52,9 +52,9 @@ export const registerChatHandlers = (io: Server) => {
 
       (socket as AuthenticatedSocket).user = {
         _id: userDoc._id.toString(),
-        username: (userDoc as any).username,
-        email: (userDoc as any).email,
-        pic: (userDoc as any).pic,
+        username: userDoc.username,
+        email: userDoc.email,
+        pic: userDoc.pic,
       };
 
       next();
@@ -70,10 +70,58 @@ export const registerChatHandlers = (io: Server) => {
 
     console.log(`✅ User connected: ${user.username} (${socket.id})`);
 
-    users.set(user._id, socket.id);
+    connectedUsers.set(user._id, socket.id);
     socket.emit("connected", { userId: user._id });
 
     // ====== JOIN CHAT ======
+    // Handle individual chat selection/creation
+    socket.on("access chat", async (userId: string) => {
+      try {
+        if (!userId || !Types.ObjectId.isValid(userId)) {
+          return socket.emit("error", "Invalid user ID");
+        }
+
+        // Find existing chat between users or create new one
+        let chat = await Chat.findOne({
+          isGroupChat: false,
+          users: { $all: [user._id, userId] },
+        }).populate("users", "-password");
+
+        if (chat) {
+          // Existing chat found
+          socket.emit("chat accessed", chat);
+          socket.join(chat._id.toString());
+          await User.findByIdAndUpdate(user._id, { selectedChat: chat._id });
+        } else {
+          // Create new chat
+          chat = await Chat.create({
+            chatName: "sender",
+            isGroupChat: false,
+            users: [user._id, userId],
+          });
+
+          const fullChat = await Chat.findById(chat._id).populate(
+            "users",
+            "-password"
+          );
+
+          // Notify both users
+          const recipientSocketId = connectedUsers.get(userId);
+          if (recipientSocketId) {
+            io.to(recipientSocketId).emit("new chat", fullChat);
+          }
+          socket.emit("chat accessed", fullChat);
+          socket.join(fullChat!._id.toString());
+          await User.findByIdAndUpdate(user._id, {
+            selectedChat: fullChat!._id,
+          });
+        }
+      } catch (err) {
+        console.error("Access chat error:", err);
+        socket.emit("error", "Failed to access chat");
+      }
+    });
+
     socket.on("join chat", async (chatId: string) => {
       try {
         if (!chatId || !Types.ObjectId.isValid(chatId)) {
@@ -113,10 +161,120 @@ export const registerChatHandlers = (io: Server) => {
       }
     });
 
+    // ====== CREATE CHAT (group or personal) ======
+    socket.on("create chat", async (data) => {
+      try {
+        // data: { type: "group"|"personal", users: [userIds], name?: string, pic?: string }
+        const { type, users, name, pic } = data;
+        const creatorId = user._id;
+        if (!type || !Array.isArray(users) || users.length === 0) {
+          return socket.emit("error", "Invalid chat creation payload");
+        }
+
+        if (type === "personal") {
+          if (users.length !== 2) {
+            return socket.emit(
+              "error",
+              "Personal chat must have exactly two users"
+            );
+          }
+          // Check if chat exists
+          const isChat = await Chat.find({
+            isGroupChat: false,
+            users: { $all: users },
+          });
+          if (isChat.length > 0) {
+            // Populate and emit existing chat
+            const fullChat = await Chat.findOne({ _id: isChat[0]._id })
+              .populate("users", "username pic email")
+              .populate("groupAdmin", "username pic email")
+              .populate({
+                path: "latestMessage",
+                select: "chat content delivered sender",
+                populate: { path: "sender", select: "username pic email" },
+              })
+              .sort({ updatedAt: -1 });
+            if (fullChat) {
+              users.forEach((uid: string) => {
+                const sid = connectedUsers.get(uid);
+                if (sid) io.to(sid).emit("chat created", fullChat.toObject());
+              });
+              socket.emit("chat created", fullChat.toObject());
+              return;
+            }
+          }
+          // Create new chat
+          const chatData = {
+            chatName: "sender",
+            isGroupChat: false,
+            users,
+          };
+          const createdChat = await Chat.create(chatData);
+          const fullChat = await Chat.findOne({ _id: createdChat._id })
+            .populate("users", "username pic email")
+            .populate("groupAdmin", "username pic email")
+            .populate({
+              path: "latestMessage",
+              select: "chat content delivered sender",
+              populate: { path: "sender", select: "username pic email" },
+            })
+            .sort({ updatedAt: -1 });
+          if (fullChat) {
+            users.forEach((uid: string) => {
+              const sid = connectedUsers.get(uid);
+              if (sid) io.to(sid).emit("chat created", fullChat.toObject());
+            });
+            socket.emit("chat created", fullChat.toObject());
+          }
+        } else if (type === "group") {
+          if (!name || typeof name !== "string") {
+            return socket.emit("error", "Group chat must have a name");
+          }
+          let groupUsers = [...users];
+          if (!groupUsers.includes(creatorId)) groupUsers.push(creatorId);
+          if (groupUsers.length < 3) {
+            return socket.emit(
+              "error",
+              "More than 2 users are required to form a group chat"
+            );
+          }
+          const groupChat = await Chat.create({
+            chatName: name,
+            pic,
+            users: groupUsers,
+            groupAdmin: creatorId,
+            isGroupChat: true,
+          });
+          const fullGroupChat = await Chat.findOne({ _id: groupChat._id })
+            .populate("users", "username pic email")
+            .populate("groupAdmin", "username pic email")
+            .populate({
+              path: "latestMessage",
+              select: "chat content delivered sender",
+              populate: { path: "sender", select: "username pic email" },
+            })
+            .sort({ updatedAt: -1 });
+          if (fullGroupChat) {
+            groupUsers.forEach((uid: string) => {
+              const sid = connectedUsers.get(uid);
+              if (sid)
+                io.to(sid).emit("chat created", fullGroupChat.toObject());
+            });
+            socket.emit("chat created", fullGroupChat.toObject());
+          }
+        } else {
+          socket.emit("error", "Unknown chat type");
+        }
+      } catch (err) {
+        console.error("Create chat error:", err);
+        socket.emit("error", "Failed to create chat");
+      }
+    });
+
     // ====== SEND MESSAGE ======
     socket.on("send message", async (data) => {
       try {
-        const { content, chatId } = data;
+        const { content, chatId, tempId } = data;
         if (!content || !chatId) {
           return socket.emit("error", "Missing message content or chatId");
         }
@@ -145,15 +303,15 @@ export const registerChatHandlers = (io: Server) => {
           );
         }
 
-        const newMessage = {
+        // Create and populate message
+        const newMessage = await Message.create({
           sender: user._id,
           content,
           chat: chatId,
           delivered: true,
-        };
+        });
 
-        let message = await Message.create(newMessage);
-        message = await message.populate("sender", "username pic email");
+        let message = await newMessage.populate("sender", "username pic email");
         message = await message.populate("chat");
         await User.populate(message.chat, {
           path: "users",
@@ -166,17 +324,44 @@ export const registerChatHandlers = (io: Server) => {
 
         // Mark unread for users not in this chat
         await User.updateMany(
-          {
-            _id: { $in: chatUsers },
-            selectedChat: { $ne: chatId },
-          },
+          { _id: { $in: chatUsers }, selectedChat: { $ne: chatId } },
           { $push: { unreadMessages: message } },
           { new: true }
         );
 
-        // Emit message to others in room
-        socket.to(chatId).emit("received message", message);
-        socket.emit("message sent", message);
+        // Emit to others in the room (those who have joined)
+        socket
+          .to(chatId)
+          .emit("received message", { ...message.toObject(), tempId });
+
+        // Also send the message directly to connected users who are NOT joined
+        // to the chat room (so users receive updates even when they haven't
+        // selected/opened the chat). This avoids missing updates for users
+        // that are online but haven't joined the chat socket room.
+        const messageObj = message.toObject();
+        for (const uid of chatUsers) {
+          const userIdStr = uid.toString();
+          if (userIdStr === user._id) continue; // skip sender
+
+          const sid = connectedUsers.get(userIdStr);
+          if (!sid) continue;
+
+          try {
+            const clientSocket = io.sockets.sockets.get(sid);
+            const isInRoom = clientSocket
+              ? clientSocket.rooms.has(chatId)
+              : false;
+            if (!isInRoom) {
+              io.to(sid).emit("received message", { ...messageObj, tempId });
+            }
+          } catch (err) {
+            // If socket lookup fails, fall back to emitting by socket id
+            io.to(sid).emit("received message", { ...messageObj, tempId });
+          }
+        }
+
+        // ✅ Send confirmation to sender — send a plain JS object (not a Mongoose document)
+        socket.emit("message sent", { tempId, message: message.toObject() });
       } catch (err) {
         console.error("Socket message error:", err);
         socket.emit("error", "Error sending message");
@@ -198,7 +383,7 @@ export const registerChatHandlers = (io: Server) => {
 
     // ====== DISCONNECT ======
     socket.on("disconnect", async () => {
-      users.delete(user._id);
+      connectedUsers.delete(user._id);
       await User.findByIdAndUpdate(user._id, { selectedChat: null });
       messageTimestamps.delete(user._id); // Clean up rate limiting data
       console.log(`❌ ${user.username} disconnected`);

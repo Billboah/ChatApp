@@ -18,7 +18,7 @@ const Messages: React.FC<Props> = ({ contentRef, scrollContainerRef }) => {
   const dispatch = useDispatch();
 
   const messageChat = messageChats.find(
-    (chat: any) => chat._id === selectedChat?._id,
+    (chat) => chat._id === selectedChat?._id,
   );
 
   //regular messagess

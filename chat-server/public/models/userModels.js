@@ -40,7 +40,10 @@ const UserSchema = new mongoose.Schema({
     username: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     email: {
-        type: String, required: true, unique: true, lowercase: true,
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
         validate: {
             validator: EmailValidator.validate,
             message: (props) => `${props.value} is not valid email address!`,
@@ -48,28 +51,38 @@ const UserSchema = new mongoose.Schema({
     },
     selectedChat: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Chat',
+        ref: "Chat",
     },
     unreadMessages: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Message',
+            ref: "Message",
             default: [],
         },
     ],
     password: { type: String, minLength: 8, required: true },
-    confirmPassword: { type: String, required: true, minLength: 8, },
-    pic: { type: String }
+    confirmPassword: {
+        type: String,
+        required: false,
+        validate: {
+            validator: function (value) {
+                return value === this.password;
+            },
+            message: "password and confirm password do not match",
+        },
+        minLength: 8,
+    },
+    pic: { type: String },
 }, {
-    timestamps: true
+    timestamps: true,
 });
-UserSchema.pre('save', function (next) {
+UserSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         var user = this;
         try {
-            if (this.isModified('password')) {
+            if (this.isModified("password")) {
                 if (this.password !== this.confirmPassword) {
-                    throw new Error('Passwords do not match');
+                    throw new Error("Passwords do not match");
                 }
                 const salt = yield bcrypt.genSalt(10);
                 user.password = yield bcrypt.hash(user.password, salt);
@@ -92,5 +105,5 @@ UserSchema.methods.comparePassword = function (candidatePassword) {
         }
     });
 };
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
+const User = mongoose.models.User || mongoose.model("User", UserSchema);
 exports.User = User;

@@ -4,7 +4,7 @@ export interface User {
   pic: string;
   name: string;
   email: string;
-  selectedChat: string;
+  selectedChat: string | null;
   unreadMessages: Message[];
   token: string;
 }
@@ -36,7 +36,7 @@ export interface Chat {
   _id: string;
   pic: string;
   chatName: string;
-  unreadMessages: any[];
+  unreadMessages: string[];
   isGroupChat: boolean;
   latestMessage: Message | null;
   createdAt: string;

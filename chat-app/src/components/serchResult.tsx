@@ -34,7 +34,7 @@ const SearchResult: React.FC<Props> = ({
     setSearchLoading(true);
     try {
       setSearchLoading(true);
-      const config: AxiosRequestConfig<any> = {
+      const config: AxiosRequestConfig = {
         headers: {
           Authorization: `Bearer ${user?.token}`,
         },
@@ -61,19 +61,24 @@ const SearchResult: React.FC<Props> = ({
       }
 
       setSearchLoading(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       setSearchLoading(false);
-      if (error.response) {
-        console.error('Server error:', error.response.data.error);
+      const err = error as {
+        response?: { data?: { error?: string } };
+        request?: unknown;
+        message?: string;
+      };
+      if (err.response) {
+        console.error('Server error:', err.response.data?.error);
         setNoResult(true);
-      } else if (error.request) {
+      } else if (err.request) {
         alert(
           'Cannot reach the server. Please check your internet connection.',
         );
         setNoResult(true);
       } else {
         setNoResult(true);
-        console.error('Error:', error.message);
+        console.error('Error:', err.message);
       }
     }
   };

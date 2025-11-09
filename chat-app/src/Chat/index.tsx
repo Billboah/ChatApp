@@ -23,7 +23,6 @@ function Chats() {
 
   useEffect(() => {
     // 1️⃣ If no user → clean up and redirect
-    console.log(user);
     if (!user) {
       socket.emit('leave chat', null);
       socket.emit('user disconnected');
@@ -83,6 +82,7 @@ function Chats() {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [user]);
+
   //handle error disappearing
   useEffect(() => {
     const timeout = setTimeout(() => {

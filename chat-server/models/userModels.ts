@@ -1,7 +1,6 @@
 import * as mongoose from "mongoose";
 import * as bcrypt from "bcryptjs";
 import * as EmailValidator from "email-validator";
-import { IMessage } from "./messageModel";
 
 interface IUser extends Document {
   username: string;
@@ -26,7 +25,7 @@ const UserSchema = new mongoose.Schema(
       lowercase: true,
       validate: {
         validator: EmailValidator.validate,
-        message: (props) => `${props.value} is not valid email address!`,
+        message: (props: any) => `${props.value} is not valid email address!`,
       },
     },
     selectedChat: {
@@ -46,8 +45,8 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: false,
       validate: {
-        validator: function (value: any) {
-          return value === this.password;
+        validator: function (value: any): boolean {
+          return value === (this as any).password;
         },
         message: "password and confirm password do not match",
       },
@@ -75,7 +74,7 @@ UserSchema.pre("save", async function (next) {
     }
     next();
   } catch (error) {
-    return next(error);
+    return next(error as mongoose.CallbackError);
   }
 });
 
@@ -85,7 +84,7 @@ UserSchema.methods.comparePassword = async function (
   try {
     return await bcrypt.compare(candidatePassword, this.password);
   } catch (error) {
-    throw new Error(error);
+    throw new Error((error as Error).message);
   }
 };
 

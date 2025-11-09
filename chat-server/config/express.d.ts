@@ -1,19 +1,11 @@
 import { Request } from "express";
-import { ParsedQs } from "qs";
+import { IUser } from "../models/userModels";
 
 // Extend the Request type
 export interface CustomRequest extends Request {
-  user: {
-    _id: string;
-    username: string;
-    pic: string;
-    name: string;
-    email: string;
-    unreadMessages: any[];
-    selectedChat: any;
-  };
-  limit: number;
-  page: number;
+  user?: IUser & Document;
+  limit?: number;
+  page?: number;
 }
 
 export interface user {
@@ -22,8 +14,8 @@ export interface user {
   pic: string;
   name: string;
   email: string;
-  unreadMessages: any[];
-  selectedChat: any;
+  unreadMessages: message[];
+  selectedChat: string | null;
 }
 
 export interface message {

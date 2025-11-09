@@ -1,20 +1,21 @@
 import React, { Dispatch, SetStateAction, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-  setError,
   setMessagesLoading,
   setSelectedChat,
   unsetUnreadMessages,
   updateMessageChats,
 } from '../../state/reducers/chat';
+import DoneIcon from '@mui/icons-material/Done';
 import { RootState } from '../../state/reducers';
 import { Chat } from '../../types';
 import { format, isToday, isYesterday, isSameWeek, isSameYear } from 'date-fns';
 import { BACKEND_API, getSender } from '../../config/chatLogics';
-import { FaUser, FaUserFriends } from 'react-icons/fa';
+import { FaRegClock, FaUser, FaUserFriends } from 'react-icons/fa';
 import { useLocation } from 'react-router-dom';
-import axios from 'axios';
 import { setSmallScreen } from '../../state/reducers/screen';
+import { apiGet } from '../../utils/api';
+import socket from '../../socket/socket';
 
 type ChatProps = {
   chat: Chat;
@@ -28,11 +29,13 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
   const { chats } = useSelector((state: RootState) => state.chat);
   const dispatch = useDispatch();
   const location = useLocation();
+  const sender = user && getSender(user, chat?.users);
+  const latestSender = chat.latestMessage && chat.latestMessage.sender;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 768px)');
 
-    const handleMediaChange = (e: any) => {
+    const handleMediaChange = (e: MediaQueryListEvent) => {
       if (e.matches) {
         dispatch(setSelectedChat(null));
       } else {
@@ -58,28 +61,21 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
         Authorization: `Bearer ${user?.token}`,
       },
     };
-    try {
-      const response = await axios.get(
-        `${BACKEND_API}/api/message/unreadmessage/${chatId}`,
-        config,
-      );
+    const data = await apiGet<any>(
+      `${BACKEND_API}/api/message/unreadmessage/${chatId}`,
+      config,
+      undefined, // no loading state here
+      dispatch,
+    );
+
+    if (data) {
       dispatch(
         updateMessageChats({
-          chatId: chatId,
-          unreadMessages: response.data,
+          chatId,
+          unreadMessages: data,
           regularMessages: [],
         }),
       );
-    } catch (error: any) {
-      if (error.response) {
-        dispatch(setError(error.response.data.message));
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        dispatch(setError('Network error, please try again later.'));
-      } else {
-        console.error('Error:', error.message);
-        dispatch(setError('An error occurred, please try again.'));
-      }
     }
   };
 
@@ -92,40 +88,32 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
         Authorization: `Bearer ${user?.token}`,
       },
     };
-    try {
-      const response = await axios.get(
-        `${BACKEND_API}/api/message/${chatId}`,
-        config,
-      );
-      dispatch(setMessagesLoading(false));
+    const data = await apiGet<any>(
+      `${BACKEND_API}/api/message/${chatId}`,
+      config,
+      (loading) => dispatch(setMessagesLoading(loading)),
+      dispatch,
+    );
+
+    if (data) {
       dispatch(
         updateMessageChats({
-          chatId: chatId,
-          regularMessages: response.data.regularMessages,
-          unreadMessages: response.data.unreadMessages,
+          chatId,
+          regularMessages: data.regularMessages,
+          unreadMessages: data.unreadMessages,
         }),
       );
-    } catch (error: any) {
-      dispatch(setMessagesLoading(false));
-      if (error.response) {
-        dispatch(setError(error.response.data.message));
-      } else if (error.request) {
-        console.error('No response received:', error.request);
-        dispatch(setError('Network error, please try again later.'));
-      } else {
-        console.error('Error:', error.message);
-        dispatch(setError('An error occurred, please try again.'));
-      }
     }
   };
 
   //click on a chat
   const handleSelect = (chat: Chat) => {
     dispatch(setSelectedChat(chat));
+    socket.emit('join chat', chat._id); //joined chat room
 
     dispatch(setSmallScreen(false));
 
-    const existingChat = messageChats.find((cht: any) => cht._id === chat._id);
+    const existingChat = messageChats.find((cht) => cht._id === chat._id);
 
     const chatToUpdate = chats.find((cht: Chat) => cht._id === chat._id);
 
@@ -143,7 +131,7 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
     }
   };
 
-  const formattedDateAndTime = (date: any) => {
+  const formattedDateAndTime = (date: string | number | Date | undefined) => {
     if (date) {
       const today = new Date();
       const messageDate = new Date(date);
@@ -198,10 +186,10 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
                 {chat?.latestMessage && (
                   <p className="text-xs text-left w-full line-clamp-2">
                     <span className="font-semibold capitalize">
-                      {chat.latestMessage.sender?._id === user?._id
+                      {latestSender?._id === user?._id
                         ? 'You'
-                        : chat.latestMessage.sender?.username}
-                      :{' '}
+                        : latestSender?.username}
+                      :
                     </span>
                     <span
                       className=" ml-[2px] "
@@ -218,9 +206,9 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
           <div className="flex items-center ">
             {user && (
               <div className="flex justify-center items-center w-[40px] h-[40px] rounded-full bg-gray-400">
-                {getSender(user, chat?.users).pic ? (
+                {sender && sender.pic ? (
                   <img
-                    src={getSender(user, chat?.users).pic}
+                    src={sender.pic}
                     alt="sender profile  image"
                     className="w-[40px] h-[40px] rounded-full "
                     loading="lazy"
@@ -232,17 +220,35 @@ const ChatList: React.FC<ChatProps> = ({ chat, setSearch }) => {
             )}
             <div className="flex flex-col items-start w-full pl-[10px]">
               <p className=" line-clamp-1 font-bold text-md text-left capitalize">
-                {user && getSender(user, chat?.users).username}
+                {sender && sender.username}
               </p>
 
               <div className="w-full flex justify-between">
                 {chat?.latestMessage && (
-                  <p
-                    className=" text-xs text-left w-full line-clamp-2"
-                    dangerouslySetInnerHTML={{
-                      __html: chat.latestMessage.content,
-                    }}
-                  />
+                  <p className="flex text-xs text-left w-full line-clamp-2">
+                    <span className="font-semibold capitalize mr-1">
+                      {latestSender?._id === user?._id &&
+                        (chat.latestMessage.delivered === true ? (
+                          <DoneIcon
+                            color="primary"
+                            sx={{ fontSize: 11 }}
+                            className="z-20"
+                          />
+                        ) : (
+                          <FaRegClock
+                            color="gray"
+                            size={9}
+                            className="z-20 mt-[3px]"
+                          />
+                        ))}
+                    </span>
+                    <span
+                      className=" text-xs text-left w-full line-clamp-2"
+                      dangerouslySetInnerHTML={{
+                        __html: chat.latestMessage.content,
+                      }}
+                    />
+                  </p>
                 )}
               </div>
             </div>

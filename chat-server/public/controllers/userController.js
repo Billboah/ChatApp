@@ -12,10 +12,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSelectedChat = exports.changePicController = exports.changeUserName = exports.searchUsersController = exports.signInController = exports.signupController = void 0;
+exports.changePicController = exports.changeUserName = exports.searchUsersController = exports.signInController = exports.signupController = void 0;
 const userModels_1 = require("../models/userModels");
 const generateToken_1 = __importDefault(require("../config/generateToken"));
-const signupController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+//user signup
+const signupController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, username, email, password, pic, confirmPassword } = req.body;
     try {
         if (!name || !email || !password || !username || !confirmPassword) {
@@ -48,16 +49,16 @@ const signupController = (req, res) => __awaiter(void 0, void 0, void 0, functio
             });
         }
         else {
-            res.status(400);
             throw new Error("Failed to create the User");
         }
     }
     catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
+        next(error);
     }
 });
 exports.signupController = signupController;
-const signInController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+//user signin
+const signInController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, password } = req.body;
     try {
         if (!password || !name) {
@@ -80,16 +81,17 @@ const signInController = (req, res) => __awaiter(void 0, void 0, void 0, functio
             });
         }
         else {
-            res.status(400);
-            throw new Error("Invalid user name or email or password ");
+            throw new Error("Invalid user name/email or password ");
         }
     }
     catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
+        console.log(error);
+        next(error);
     }
 });
 exports.signInController = signInController;
-const searchUsersController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+//
+const searchUsersController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const keyword = req.query.search;
     try {
         const users = yield userModels_1.User.find(keyword
@@ -103,11 +105,12 @@ const searchUsersController = (req, res) => __awaiter(void 0, void 0, void 0, fu
         res.json(users);
     }
     catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
+        next(error);
     }
 });
 exports.searchUsersController = searchUsersController;
-const changeUserName = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+//change username
+const changeUserName = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const username = req.body.username;
         const userId = req.user._id;
@@ -132,12 +135,12 @@ const changeUserName = (req, res) => __awaiter(void 0, void 0, void 0, function*
         });
     }
     catch (error) {
-        console.error(error);
-        res.status(error.status || 500).json({ error: error.message });
+        next(error);
     }
 });
 exports.changeUserName = changeUserName;
-const changePicController = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+//change profile picture
+const changePicController = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const pic = req.body.pic;
         const userId = req.user._id;
@@ -162,30 +165,7 @@ const changePicController = (req, res) => __awaiter(void 0, void 0, void 0, func
         });
     }
     catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
+        next(error);
     }
 });
 exports.changePicController = changePicController;
-const updateSelectedChat = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { selectedChatId } = req.body;
-    const userId = req.user._id;
-    try {
-        if (userId) {
-            if (selectedChatId) {
-                yield userModels_1.User.findByIdAndUpdate(userId, {
-                    selectedChat: selectedChatId,
-                }, { new: true });
-            }
-            else {
-                yield userModels_1.User.findByIdAndUpdate(userId, {
-                    selectedChat: null,
-                }, { new: true });
-            }
-        }
-        res.json();
-    }
-    catch (error) {
-        res.status(error.status || 500).json({ error: error.message });
-    }
-});
-exports.updateSelectedChat = updateSelectedChat;

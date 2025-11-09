@@ -1,5 +1,5 @@
 import { CustomRequest } from "../config/express";
-import { Response, NextFunction, Request } from "express";
+import { Response, NextFunction } from "express";
 
 export const error_handler = (
   err: any,

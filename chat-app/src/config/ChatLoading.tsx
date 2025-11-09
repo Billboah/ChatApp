@@ -17,7 +17,7 @@ function FadeLoading({
   );
 }
 
-function ClipLoading({ size }: any) {
+function ClipLoading({ size }: { size?: number }) {
   return <ClipLoader color="#4464ab" size={size} />;
 }
 

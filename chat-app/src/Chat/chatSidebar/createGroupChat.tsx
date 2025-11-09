@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import { AxiosRequestConfig } from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { FaCamera, FaTimes } from 'react-icons/fa';
@@ -6,10 +6,9 @@ import { setNewGroup } from '../../state/reducers/screen';
 import { setSelectedChat, updateChat } from '../../state/reducers/chat';
 import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
-import { BACKEND_API } from '../../config/chatLogics';
 import SearchResult from '../../components/serchResult';
 import { Chat, User } from '../../types';
-import { apiPost } from '../../utils/api';
+import socket from '../../socket/socket';
 import { handleImage } from '../../utils/cloudinary';
 
 function CreateGroupChat() {
@@ -32,29 +31,27 @@ function CreateGroupChat() {
   //create group chat
   const handleCreateGroup = async () => {
     setCreateGroupLoading(true);
-    const config: AxiosRequestConfig<any> = {
+    const config: AxiosRequestConfig = {
       headers: {
         Authorization: `Bearer ${user?.token}`,
       },
     };
 
-    const users = JSON.stringify(chatList.map((user) => user._id));
-
-    const result = await apiPost(
-      '/api/chat/group',
-      { users, name, pic },
-      config,
-      setCreateGroupLoading,
-      dispatch,
-    );
-    if (result) {
-      const chat = result as Chat;
-      dispatch(setSelectedChat(chat));
-      dispatch(updateChat(chat));
-      dispatch(setNewGroup(false));
-    }
+    const users = chatList.map((user) => user._id);
+    socket.emit('create chat', { type: 'group', users, name, pic });
+    setCreateGroupLoading(false);
+    useEffect(() => {
+      function handleChatCreated(chat: Chat) {
+        dispatch(setSelectedChat(chat));
+        dispatch(updateChat(chat));
+        dispatch(setNewGroup(false));
+      }
+      socket.on('chat created', handleChatCreated);
+      return () => {
+        socket.off('chat created', handleChatCreated);
+      };
+    }, [dispatch]);
   };
-
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
