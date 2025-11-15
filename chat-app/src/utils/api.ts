@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { setError } from '../state/reducers/chat';
 
 const BASE_URL = 'http://localhost:5000'; // your backend URL

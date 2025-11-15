@@ -1,10 +1,8 @@
-import { AxiosRequestConfig } from 'axios';
 import React, { useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { FaCamera, FaTimes } from 'react-icons/fa';
 import { setNewGroup } from '../../state/reducers/screen';
 import { setSelectedChat, updateChat } from '../../state/reducers/chat';
-import { RootState } from '../../state/reducers';
 import { FadeLoading } from '../../config/ChatLoading';
 import SearchResult from '../../components/serchResult';
 import { Chat, User } from '../../types';
@@ -13,7 +11,6 @@ import { handleImage } from '../../utils/cloudinary';
 
 function CreateGroupChat() {
   const dispatch = useDispatch();
-  const { user } = useSelector((state: RootState) => state.auth);
   const [createGroupLoading, setCreateGroupLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
@@ -31,11 +28,6 @@ function CreateGroupChat() {
   //create group chat
   const handleCreateGroup = async () => {
     setCreateGroupLoading(true);
-    const config: AxiosRequestConfig = {
-      headers: {
-        Authorization: `Bearer ${user?.token}`,
-      },
-    };
 
     const users = chatList.map((user) => user._id);
     socket.emit('create chat', { type: 'group', users, name, pic });
