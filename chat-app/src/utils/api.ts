@@ -1,10 +1,9 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { setError } from '../state/reducers/chat';
-
-const BASE_URL = 'http://localhost:5000'; // your backend URL
+import { BACKEND_API } from '../config/chatLogics';
 
 export const instance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: BACKEND_API,
   headers: {
     'Content-Type': 'application/json',
   },
