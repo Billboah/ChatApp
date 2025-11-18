@@ -33,7 +33,10 @@
     "test:coverage": "jest --coverage",
     "eject": "react-scripts eject"
   },
-  "browserslist": {
+  "engines": {
+  "node": "22.x"
+},
+"browserslist": {
     "production": [
       ">0.2%",
       "not dead",
