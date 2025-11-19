@@ -25,6 +25,10 @@ app.use(express.json());
 app.use("/api/user", userRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/message", messageRouter);
+app.get("/", (req, res) => {
+  res.send("Backend is working!");
+});
+
 
 // Error handler
 app.use(error_handler);
