@@ -89,7 +89,6 @@ export default function SignIn() {
             <input
               type="checkbox"
               className="mr-[5px] scale-150"
-              required
               onChange={(e) => {
                 if (e.target.checked) {
                   setShowPassword(true);
